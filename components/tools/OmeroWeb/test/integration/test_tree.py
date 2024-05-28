@@ -144,6 +144,7 @@ def expected_images(user, images, extraValues=None):
     expected = []
     for image in images:
         i = {
+            'archived': False,
             'id': image.id.val,
             'name': image.name.val,
             'ownerId': image.details.owner.id.val,
