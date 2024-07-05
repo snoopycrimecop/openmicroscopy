@@ -350,7 +350,7 @@
       <parameter name="exe" default="${PYTHON}"/>
       <server id="Tables-${index}" exe="${exe}" activation="always" pwd="${OMERO_HOME}">
         <option>-m</option>
-        <option>runTables</option>
+        <option>${TABLES_MODULE}</option>
         <adapter name="TablesAdapter" endpoints="tcp">
           <object identity="Tables-${index}" type="::omero::grid::Tables"/>
         </adapter>
