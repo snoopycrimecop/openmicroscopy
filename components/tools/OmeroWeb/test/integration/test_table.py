@@ -242,13 +242,15 @@ class TestOmeroTables(IWebTest):
         ['query=Well>2', [2, 3, 4], 0],
         ['query=Well>2&start=3', [3, 4], 3],
     ])
-    def test_table_get_where_list(self, omero_table_file, django_client, table_data, query_result):
+    def test_table_get_where_list(
+            self, omero_table_file, django_client, table_data, query_result):
         """
         Test query call returning resulting row numbers
         """
         col_types, col_names, rows = table_data
         query, expected, start = query_result
-        request_url = reverse("webgateway_perform_get_where_list", args=[omero_table_file])
+        request_url = reverse("webgateway_perform_get_where_list",
+                              args=[omero_table_file])
         response = get_json(django_client, '%s?%s' % (request_url, query))
         assert response['rows'] == expected
         assert response['meta']['partialCount'] == len(expected)
@@ -260,18 +262,22 @@ class TestOmeroTables(IWebTest):
 
     @pytest.mark.parametrize("query_result", [
         ['rows=0-4&columns=0', [[1, 2, 3, 4, 5]], ['Well']],
-        ['rows=0&columns=0,1', [[1], ['test'], [0.5], [135345.0], [2]], ['Well', 'TestColumn']],
+        ['rows=0&columns=0,1', [[1], ['test'], [0.5], [135345.0], [2]],
+         ['Well', 'TestColumn']],
         ['rows=0,1&columns=0-1',
-         [[1, 2], ['test', 'string'], [0.5, 1.0], [135345.0, 345345.121], [2, 4]],
+         [[1, 2], ['test', 'string'], [0.5, 1.0], [135345.0, 345345.121],
+          [2, 4]],
          ['Well', 'TestColumn']],
     ])
-    def test_table_perform_slice(self, omero_table_file, django_client, table_data, query_result):
+    def test_table_perform_slice(
+            self, omero_table_file, django_client, table_data, query_result):
         """
         Test slice call returning table data in columnar format
         """
         col_types, col_names, rows = table_data
         query, result, columns = query_result
-        request_url = reverse("webgateway_perform_slice", args=[omero_table_file])
+        request_url = reverse("webgateway_perform_slice",
+                              args=[omero_table_file])
         response = get_json(django_client, '%s?%s' % (request_url, query))
         assert response['columns'] == result
         assert response['meta']['columns'] == columns
@@ -287,11 +293,14 @@ class TestOmeroTables(IWebTest):
         ['rows=0-1000000&columns=0-4', False],  # too many cells
         ['rows=0-100&columns=0-4', True],  # all good
     ])
-    def test_table_perform_slice_errors(self, omero_table_file, django_client, table_data, query_validity):
+    def test_table_perform_slice_errors(
+            self, omero_table_file, django_client, table_data,
+            query_validity):
         """
         Test invalid slice calls
         """
         query, valid = query_validity
-        request_url = reverse("webgateway_perform_slice", args=[omero_table_file])
+        request_url = reverse("webgateway_perform_slice",
+                              args=[omero_table_file])
         response = get_json(django_client, '%s?%s' % (request_url, query))
         assert response.has_key('error') != valid
