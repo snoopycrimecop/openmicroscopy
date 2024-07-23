@@ -262,11 +262,8 @@ class TestOmeroTables(IWebTest):
 
     @pytest.mark.parametrize("query_result", [
         ['rows=0-4&columns=0', [[1, 2, 3, 4, 5]], ['Well']],
-        ['rows=0&columns=0,1', [[1], ['test'], [0.5], [135345.0], [2]],
-         ['Well', 'TestColumn']],
-        ['rows=0,1&columns=0-1',
-         [[1, 2], ['test', 'string'], [0.5, 1.0], [135345.0, 345345.121],
-          [2, 4]],
+        ['rows=0&columns=0,1', [[1], ['test']], ['Well', 'TestColumn']],
+        ['rows=0,1&columns=0-1', [[1, 2], ['test', 'string']],
          ['Well', 'TestColumn']],
     ])
     def test_table_perform_slice(
@@ -303,4 +300,4 @@ class TestOmeroTables(IWebTest):
         request_url = reverse("webgateway_perform_slice",
                               args=[omero_table_file])
         response = get_json(django_client, '%s?%s' % (request_url, query))
-        assert response.has_key('error') != valid
+        assert ('error' not in response) == valid
