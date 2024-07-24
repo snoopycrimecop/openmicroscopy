@@ -288,7 +288,11 @@ class TestOmeroTables(IWebTest):
         ['columns=0-2', False],  # missing rows
         ['rows=0-4&columns=0-100', False],  # columns out of range
         ['rows=0-1000000&columns=0-4', False],  # too many cells
-        ['rows=0-100&columns=0-4', True],  # all good
+        ['rows=0-100&columns=0-4', False],  # rows out of range
+        ['rows=0-3,-1&columns=0-4', False],  # invalid row
+        ['rows=0,2.5&columns=0-4', False],  # invalid row
+        ['rows=0,X-Y&columns=0-4', False],  # invalid row
+        ['rows=0-3&columns=0-4', True],  # all good
     ])
     def test_table_perform_slice_errors(
             self, omero_table_file, django_client, table_data,
