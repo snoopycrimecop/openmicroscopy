@@ -249,7 +249,7 @@ class TestOmeroTables(IWebTest):
         """
         col_types, col_names, rows = table_data
         query, expected, start = query_result
-        request_url = reverse("webgateway_perform_get_where_list",
+        request_url = reverse("webgateway_table_get_where_list",
                               args=[omero_table_file])
         response = get_json(django_client, '%s?%s' % (request_url, query))
         assert response['rows'] == expected
@@ -273,7 +273,7 @@ class TestOmeroTables(IWebTest):
         """
         col_types, col_names, rows = table_data
         query, result, columns = query_result
-        request_url = reverse("webgateway_perform_slice",
+        request_url = reverse("webgateway_table_slice",
                               args=[omero_table_file])
         response = get_json(django_client, '%s?%s' % (request_url, query))
         assert response['columns'] == result
@@ -301,7 +301,7 @@ class TestOmeroTables(IWebTest):
         Test invalid slice calls
         """
         query, valid = query_validity
-        request_url = reverse("webgateway_perform_slice",
+        request_url = reverse("webgateway_table_slice",
                               args=[omero_table_file])
         response = get_json(django_client, '%s?%s' % (request_url, query))
         assert ('error' not in response) == valid
