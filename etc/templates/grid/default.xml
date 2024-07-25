@@ -21,6 +21,7 @@
     <variable name="ROUTERPORT"    value="@omero.ports.prefix@@omero.ports.ssl@"/>
     <variable name="INSECUREROUTER" value="OMERO.Glacier2/router:tcp -p @omero.ports.prefix@@omero.ports.tcp@ -h @omero.host@"/>
     <variable name="SEP"           value=":"/>
+    <variable name="TABLES_MODULE" value="@omero.tables.module@"/>
 
     <properties id="Profile">
       <!--
