@@ -21,8 +21,13 @@ This release includes the following upgrade of the OMERO.server Java components:
 
 Improvements include:
 
-- an update of IceGrid templates to make OMERO.tables more configurable
 - an upgrade of Bio-Formats to version 7.3.1
+- an update of IceGrid templates to make OMERO.tables more configurable. 
+
+**Note:** This upgrade will require an upgrade of OMERO.py to 5.19.4 to ensure that
+the Tables service starts as expected. If OMERO.py is not upgraded, the Tables service will
+be marked as inactive.
+
 
 This version of the OMERO.server has been tested with:
 
