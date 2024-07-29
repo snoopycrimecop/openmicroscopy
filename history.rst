@@ -21,6 +21,8 @@ This release includes the following upgrade of the OMERO.server Java components:
 
 Improvements include:
 
+- Handle archive status being populated. Related to https://github.com/ome/omero-web/pull/555
+- Add more tests using the Tables service
 - an upgrade of Bio-Formats to version 7.3.1
 - an update of IceGrid templates to make OMERO.tables more configurable. 
 
