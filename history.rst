@@ -8,7 +8,7 @@ OMERO version history
 5.6.13 (August 2024)
 --------------------
 
-This release reverts a change to the build process in 5.6.12 that resulted in
+This release reverts a change to the build process introduced in 5.6.12 that resulted in
 unused copies of old jars being included in the release.
 
 
