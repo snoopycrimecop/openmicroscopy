@@ -850,23 +850,38 @@ class TestTables(ITest):
         table.delete()
         table.close()
 
-    def testSliceEmptyInput(self, twoColumnFiveRowTable):
+    def testSliceOrdering(self, twoColumnFiveRowTable):
 
         data = twoColumnFiveRowTable.slice([0, 1], [0, 1, 2, 3, 4])
         assert 2 == len(data.columns)
-        assert 5 == len(data.columns[0].values)
         assert 5 == len(data.rowNumbers)
+        assert [1, 2, 3, 4, 5] == data.columns[0].values
+        assert [0.25, 0.5, 1.0, 1.5, 2.0] == data.columns[1].values
 
-        data = twoColumnFiveRowTable.slice(None, [4, 2])
+        data = twoColumnFiveRowTable.slice([1, 0], [0, 1, 2, 3, 4])
         assert 2 == len(data.columns)
-        assert [5, 3] == data.columns[0].values
-        assert [2.0, 1.0] == data.columns[1].values
+        assert 5 == len(data.rowNumbers)
+        assert [0.25, 0.5, 1.0, 1.5, 2.0] == data.columns[0].values
+        assert [1, 2, 3, 4, 5] == data.columns[1].values
+
+        data = twoColumnFiveRowTable.slice([1, 0], [3, 1, 4, 0, 2])
+        assert 2 == len(data.columns)
+        assert 5 == len(data.rowNumbers)
+        assert [1.5, 0.5, 2.0, 0.25, 1.0] == data.columns[0].values
+        assert [4, 2, 5, 1, 3] == data.columns[1].values
+
+    def testSliceEmptyInput(self, twoColumnFiveRowTable):
+
+        data = twoColumnFiveRowTable.slice(None, [2, 4])
+        assert 2 == len(data.columns)
+        assert [3, 5] == data.columns[0].values
+        assert [1.0, 2.0] == data.columns[1].values
         assert 2 == len(data.rowNumbers)
 
-        data = twoColumnFiveRowTable.slice([], [4, 2])
+        data = twoColumnFiveRowTable.slice([], [2, 4])
         assert 2 == len(data.columns)
-        assert [5, 3] == data.columns[0].values
-        assert [2.0, 1.0] == data.columns[1].values
+        assert [3, 5] == data.columns[0].values
+        assert [1.0, 2.0] == data.columns[1].values
         assert 2 == len(data.rowNumbers)
 
         data = twoColumnFiveRowTable.slice([1], [])
@@ -876,18 +891,19 @@ class TestTables(ITest):
 
         data = twoColumnFiveRowTable.slice([1], None)
         assert 1 == len(data.columns)
-        assert 5 == len(data.columns[0].values)
         assert [0.25, 0.5, 1.0, 1.5, 2.0] == data.columns[0].values
         assert 5 == len(data.rowNumbers)
 
         data = twoColumnFiveRowTable.slice([], [])
         assert 2 == len(data.columns)
-        assert 5 == len(data.columns[0].values)
+        assert [1, 2, 3, 4, 5] == data.columns[0].values
+        assert [0.25, 0.5, 1.0, 1.5, 2.0] == data.columns[1].values
         assert 5 == len(data.rowNumbers)
 
         data = twoColumnFiveRowTable.slice(None, None)
         assert 2 == len(data.columns)
-        assert 5 == len(data.columns[0].values)
+        assert [1, 2, 3, 4, 5] == data.columns[0].values
+        assert [0.25, 0.5, 1.0, 1.5, 2.0] == data.columns[1].values
         assert 5 == len(data.rowNumbers)
 
     def testReadCoordinatesInvalidInput(self, twoColumnFiveRowTable):
