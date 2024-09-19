@@ -870,6 +870,20 @@ class TestTables(ITest):
         assert [1.5, 0.5, 2.0, 0.25, 1.0] == data.columns[0].values
         assert [4, 2, 5, 1, 3] == data.columns[1].values
 
+    def testReadCoordinatesOrdering(self, twoColumnFiveRowTable):
+
+        data = twoColumnFiveRowTable.readCoordinates([0, 1, 2, 3, 4])
+        assert 2 == len(data.columns)
+        assert 5 == len(data.rowNumbers)
+        assert [1, 2, 3, 4, 5] == data.columns[0].values
+        assert [0.25, 0.5, 1.0, 1.5, 2.0] == data.columns[1].values
+
+        data = twoColumnFiveRowTable.readCoordinates([3, 1, 4, 0, 2])
+        assert 2 == len(data.columns)
+        assert 5 == len(data.rowNumbers)
+        assert [4, 2, 5, 1, 3] == data.columns[0].values
+        assert [1.5, 0.5, 2.0, 0.25, 1.0] == data.columns[1].values
+
     def testSliceEmptyInput(self, twoColumnFiveRowTable):
 
         data = twoColumnFiveRowTable.slice(None, [2, 4])
