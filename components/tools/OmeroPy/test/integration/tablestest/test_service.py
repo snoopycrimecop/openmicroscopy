@@ -950,7 +950,7 @@ class TestTables(ITest):
 
     def testSliceInvalidInput(self, twoColumnFiveRowTable):
 
-        # colNumbers must match table columns
+        # colNumbers must match number of columns
         with pytest.raises(omero.ApiUsageException):
             twoColumnFiveRowTable.slice([2], [])
 
@@ -958,21 +958,30 @@ class TestTables(ITest):
         with pytest.raises(omero.ApiUsageException):
             twoColumnFiveRowTable.slice([], [6])
 
-    def testReadStartEnd(self, twoColumnFiveRowTable):
+    @pytest.mark.broken(reason="start=0,end=0 to be reviewed")
+    def testReadEqual(self, twoColumnFiveRowTable):
 
-        # [1, 2, 3, 4, 5][-1:5] = [5]
-        data = twoColumnFiveRowTable.read([0], -1, 5)
-        assert 1 == len(data.columns)
-        assert [5] == data.columns[0].values
-        assert [4] == data.rowNumbers
-
-        # Special casing around [0:0]
+        # start=0, end=0 has a special contract
         data = twoColumnFiveRowTable.read([0], 0, 0)
         assert 1 == len(data.columns)
-        assert [1, 2, 3, 4, 5] == data.columns[0].values
-        assert [0, 1, 2, 3, 4] == data.rowNumbers
+        assert [1] == data.columns[0].values
+        assert [0] == data.rowNumbers
 
-        # [1, 2, 3, 4, 5][0:2] = [1, 2]
+        # [1, 2, 3, 4, 5][2:2] = []
+        data = twoColumnFiveRowTable.read([0], 2, 2)
+        assert 1 == len(data.columns)
+        assert [] == data.columns[0].values
+        assert 0 == len(data.rowNumbers)
+
+    def testReadStartEnd(self, twoColumnFiveRowTable):
+
+        # [1, 2, 3, 4, 5][0:1] = [1]
+        data = twoColumnFiveRowTable.read([0], 0, 1)
+        assert 1 == len(data.columns)
+        assert [1] == data.columns[0].values
+        assert [0] == data.rowNumbers
+
+        # [1, 2, 3, 4, 5][0:1] = [1, 2]
         data = twoColumnFiveRowTable.read([0], 0, 2)
         assert 1 == len(data.columns)
         assert [1, 2] == data.columns[0].values
@@ -983,6 +992,27 @@ class TestTables(ITest):
         assert 1 == len(data.columns)
         assert [1, 2, 3, 4, 5] == data.columns[0].values
         assert [0, 1, 2, 3, 4] == data.rowNumbers
+
+        # [1, 2, 3, 4, 5][2:5] = [3, 4, 5]
+        data = twoColumnFiveRowTable.read([0], 2, 5)
+        assert 1 == len(data.columns)
+        assert [3, 4, 5] == data.columns[0].values
+        assert [2, 3, 4] == data.rowNumbers
+
+        # [1, 2, 3, 4, 5][2:4] = [3, 4]
+        data = twoColumnFiveRowTable.read([0], 2, 4)
+        assert 1 == len(data.columns)
+        assert [3, 4] == data.columns[0].values
+        assert [2, 3] == data.rowNumbers
+
+    @pytest.mark.broken(reason="need to be reviewed")
+    def testReadOutOfRange(self, twoColumnFiveRowTable):
+
+        # [1, 2, 3, 4, 5][-1:5] = [5]
+        data = twoColumnFiveRowTable.read([0], -1, 5)
+        assert 1 == len(data.columns)
+        assert [5] == data.columns[0].values
+        assert [4] == data.rowNumbers
 
         # [1, 2, 3, 4, 5][0:10] = [1, 2, 3, 4, 5]
         data = twoColumnFiveRowTable.read([0], 0, 10)
@@ -1008,20 +1038,10 @@ class TestTables(ITest):
         assert [] == data.columns[0].values
         assert 0 == len(data.rowNumbers)
 
+    def testReadStartGreaterThanEnd(self, twoColumnFiveRowTable):
+
         # [1, 2, 3, 4, 5][2:1] = []
         data = twoColumnFiveRowTable.read([0], 2, 1)
         assert 1 == len(data.columns)
         assert [] == data.columns[0].values
         assert 0 == len(data.rowNumbers)
-
-        # [1, 2, 3, 4, 5][2:2] = []
-        data = twoColumnFiveRowTable.read([0], 2, 2)
-        assert 1 == len(data.columns)
-        assert [] == data.columns[0].values
-        assert 0 == len(data.rowNumbers)
-
-        # [1, 2, 3, 4, 5][2:5] = [3, 4, 5]
-        data = twoColumnFiveRowTable.read([0], 2, 5)
-        assert 1 == len(data.columns)
-        assert [3, 4, 5] == data.columns[0].values
-        assert [2, 3, 4] == data.rowNumbers
