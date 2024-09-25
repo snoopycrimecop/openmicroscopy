@@ -1088,3 +1088,72 @@ class TestTables(ITest):
 
         table.delete()
         table.close()
+
+    def testUpdateFirstRow(self, twoColumnFiveRowTable):
+
+        updateData = omero.grid.Data()
+        updateData.rowNumbers = [0]
+        updateData.columns = [
+            columns.LongColumnI('lc', 'long', [6]),
+            columns.DoubleColumnI('dc', 'double', [2.5])
+        ]
+        twoColumnFiveRowTable.update(updateData)
+
+        data = twoColumnFiveRowTable.slice([], [])
+        assert 2 == len(data.columns)
+        assert [6, 2, 3, 4, 5] == data.columns[0].values
+        assert [2.5, 0.5, 1.0, 1.5, 2.0] == data.columns[1].values
+        assert [0, 1, 2, 3, 4] == data.rowNumbers
+
+    def testUpdateMultipleRows(self, twoColumnFiveRowTable):
+
+        updateData = omero.grid.Data()
+        updateData.rowNumbers = [0, 3, 4]
+        updateData.columns = [
+            columns.LongColumnI('lc', 'long', [1, 7, 8]),
+            columns.DoubleColumnI('dc', 'double', [0, 3.0, 3.5])
+        ]
+        twoColumnFiveRowTable.update(updateData)
+
+        data = twoColumnFiveRowTable.slice([], [])
+        assert 2 == len(data.columns)
+        assert [1, 2, 3, 7, 8] == data.columns[0].values
+        assert [0, 0.5, 1.0, 3.0, 3.5] == data.columns[1].values
+        assert [0, 1, 2, 3, 4] == data.rowNumbers
+
+    def testUpdateAllows(self, twoColumnFiveRowTable):
+
+        updateData = omero.grid.Data()
+        updateData.rowNumbers = [0, 1, 2, 3, 4]
+        updateData.columns = [
+            columns.LongColumnI('lc', 'long', [2, 3, 4, 5, 6]),
+            columns.DoubleColumnI('dc', 'double', [1.0, 1.5, 2.0, 2.5, 3.0])
+        ]
+        twoColumnFiveRowTable.update(updateData)
+
+        data = twoColumnFiveRowTable.slice([], [])
+        assert 2 == len(data.columns)
+        assert [2, 3, 4, 5, 6] == data.columns[0].values
+        assert [1.0, 1.5, 2.0, 2.5, 3.0] == data.columns[1].values
+        assert [0, 1, 2, 3, 4] == data.rowNumbers
+
+    def testCannotUpdateOutOfRange(self, twoColumnFiveRowTable):
+
+        updateData = omero.grid.Data()
+        updateData.rowNumbers = [5]
+        updateData.columns = [
+            columns.LongColumnI('lc', 'long', [2]),
+            columns.DoubleColumnI('dc', 'double', [1.0])
+        ]
+        # colNumbers must match number of columns
+        with pytest.raises(omero.ApiUsageException):
+            twoColumnFiveRowTable.update(updateData)
+
+        updateData.rowNumbers = [3, 5]
+        updateData.columns = [
+            columns.LongColumnI('lc', 'long', [1, 2]),
+            columns.DoubleColumnI('dc', 'double', [0.0, 1.0])
+        ]
+        # colNumbers must match number of columns
+        with pytest.raises(omero.ApiUsageException):
+            twoColumnFiveRowTable.update(updateData)
