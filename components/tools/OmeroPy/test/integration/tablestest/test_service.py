@@ -1045,3 +1045,46 @@ class TestTables(ITest):
         assert 1 == len(data.columns)
         assert [] == data.columns[0].values
         assert 0 == len(data.rowNumbers)
+
+    def testAddData(self):
+
+        grid = self.client.sf.sharedResources()
+        table = grid.newTable(1, "/testAddData")
+        lc = columns.LongColumnI('lc', 'long', [1, 2, 3])
+        dc = columns.DoubleColumnI('dc', 'double', [0.25, 0.5, 1.0])
+        table.initialize([lc, dc])
+        table.addData([lc, dc])
+
+        data = table.slice([], [])
+        assert 2 == len(data.columns)
+        assert [1, 2, 3] == data.columns[0].values
+        assert [0.25, 0.5, 1.0] == data.columns[1].values
+        assert [0, 1, 2] == data.rowNumbers
+
+        # Test addData using the opened table
+        lc = columns.LongColumnI('lc', 'long', [4, 5])
+        dc = columns.DoubleColumnI('dc', 'double', [1.5, 2.0])
+        table.addData([lc, dc])
+        data = table.slice([], [])
+        assert 2 == len(data.columns)
+        assert [1, 2, 3, 4, 5] == data.columns[0].values
+        assert [0.25, 0.5, 1.0, 1.5, 2.0] == data.columns[1].values
+        assert [0, 1, 2, 3, 4] == data.rowNumbers
+
+        tid = unwrap(table.getOriginalFile().getId())
+        table.close()
+
+        # Test addData after reopening the table
+        table = grid.openTable(omero.model.OriginalFileI(tid))
+        lc = columns.LongColumnI('lc', 'long', [6, 7])
+        dc = columns.DoubleColumnI('dc', 'double', [2.5, 3.0])
+        table.addData([lc, dc])
+
+        data = table.slice([], [])
+        assert 2 == len(data.columns)
+        assert [1, 2, 3, 4, 5, 6, 7] == data.columns[0].values
+        assert [0.25, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0] == data.columns[1].values
+        assert [0, 1, 2, 3, 4, 5, 6] == data.rowNumbers
+
+        table.delete()
+        table.close()
