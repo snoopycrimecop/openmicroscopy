@@ -193,6 +193,10 @@ class TestOmeroTables(IWebTest):
         ["query=SmallNumbers<0.1&col_name=Well", "000001"],
         # IDs 4 & 6 are True for query
         ['query=SmallNumbers>0.5&col_name=IDs', "0000101"],
+        # a query that does not match anything
+        ['query=SmallNumbers>100', "0000000"],
+        # a query that matches everything
+        ['query=SmallNumbers>0&col_name=Well', "011111"],
     ])
     def test_table_bitmask(self, omero_table_file,
                            django_client, query_result):
