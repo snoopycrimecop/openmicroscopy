@@ -22,9 +22,9 @@ This release includes the following upgrade of the OMERO.server Java components:
 
 Improvements include:
 
-- Bump slf4j dependencies. See https://github.com/ome/openmicroscopy/pull/6409
-- Add new LUTs See https://github.com/ome/openmicroscopy/pull/6398 and https://github.com/ome/omero-web/pull/581
-- Ugrade of Bio-Formats to version 8.0.1
+- Bump slf4j dependencies. See https://github.com/ome/openmicroscopy/pull/6409.
+- Add new lookup tables See https://github.com/ome/openmicroscopy/pull/6398.
+- Ugrade of Bio-Formats to version 8.0.1.
 - Fix dependency resolution following the upgrade of Bio-Formats see https://github.com/ome/openmicroscopy/pull/6413
 - Improve test coverage for table slice.  See https://github.com/ome/openmicroscopy/pull/6409
 
