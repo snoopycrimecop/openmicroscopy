@@ -26,8 +26,8 @@ Improvements include:
 - Add new lookup tables See https://github.com/ome/openmicroscopy/pull/6398.
 - Ugrade of Bio-Formats to version 8.0.1.
 
-**Note:** This version has been built via Java 11 with the compatibility flag on for Java 8.
-Limited testing was done with Java 8 but the application should still run on Java 8.
+**Note:** The omero-* java components have been built via Java 11 with the compatibility flag on for Java 8.
+Due to limited testing on Java 8, we recommend to upgrade to Java 11 or higher.
 
 This version of the OMERO.server has been tested with:
 
