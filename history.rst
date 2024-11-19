@@ -26,7 +26,6 @@ Improvements include:
 - Add new lookup tables See https://github.com/ome/openmicroscopy/pull/6398.
 - Ugrade of Bio-Formats to version 8.0.1.
 - Fix dependency resolution following the upgrade of Bio-Formats see https://github.com/ome/openmicroscopy/pull/6413
-- Improve test coverage for table slice.  See https://github.com/ome/openmicroscopy/pull/6409
 
 **Note:** This version has been built via Java 11 with the compatibility flag on for Java 8.
 Limited testing was done with Java 8 but the application should still run on Java 8.
