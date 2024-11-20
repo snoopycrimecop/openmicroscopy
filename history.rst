@@ -24,9 +24,9 @@ Due to limited testing on Java 8, we recommend to upgrade to Java 11 or higher.
 
 Improvements include:
 
-- Bump slf4j dependencies. See https://github.com/ome/openmicroscopy/pull/6409.
-- Add new lookup tables See https://github.com/ome/openmicroscopy/pull/6398.
+- Add new lookup tables. See https://github.com/ome/openmicroscopy/pull/6398.
 - Ugrade of Bio-Formats to version 8.0.1.
+- Bump slf4j dependencies. See https://github.com/ome/openmicroscopy/pull/6409.
 
 
 This version of the OMERO.server has been tested with:
