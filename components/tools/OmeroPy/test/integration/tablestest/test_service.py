@@ -834,4 +834,326 @@ class TestTables(ITest):
         assert 5 == len(data.columns[0].values)
         assert 0 == len(data.rowNumbers)
 
-# TODO: Add tests for error conditions
+    @pytest.fixture(scope='function')
+    def twoColumnFiveRowTable(self):
+        grid = self.client.sf.sharedResources()
+        table = grid.newTable(1, "/twoColumnFiveRowTable")
+        assert table
+
+        lc = columns.LongColumnI('lc', 'long', [1, 2, 3, 4, 5])
+        dc = columns.DoubleColumnI('dc', 'double', [0.25, 0.5, 1.0, 1.5, 2.0])
+        table.initialize([lc, dc])
+        table.addData([lc, dc])
+
+        yield table
+
+        table.delete()
+        table.close()
+
+    def testSliceOrdering(self, twoColumnFiveRowTable):
+
+        data = twoColumnFiveRowTable.slice([0, 1], [0, 1, 2, 3, 4])
+        assert 2 == len(data.columns)
+        assert 5 == len(data.rowNumbers)
+        assert [1, 2, 3, 4, 5] == data.columns[0].values
+        assert [0.25, 0.5, 1.0, 1.5, 2.0] == data.columns[1].values
+
+        data = twoColumnFiveRowTable.slice([1, 0], [0, 1, 2, 3, 4])
+        assert 2 == len(data.columns)
+        assert 5 == len(data.rowNumbers)
+        assert [0.25, 0.5, 1.0, 1.5, 2.0] == data.columns[0].values
+        assert [1, 2, 3, 4, 5] == data.columns[1].values
+
+        data = twoColumnFiveRowTable.slice([1, 0], [3, 1, 4, 0, 2])
+        assert 2 == len(data.columns)
+        assert 5 == len(data.rowNumbers)
+        assert [1.5, 0.5, 2.0, 0.25, 1.0] == data.columns[0].values
+        assert [4, 2, 5, 1, 3] == data.columns[1].values
+
+    def testReadCoordinatesOrdering(self, twoColumnFiveRowTable):
+
+        data = twoColumnFiveRowTable.readCoordinates([0, 1, 2, 3, 4])
+        assert 2 == len(data.columns)
+        assert 5 == len(data.rowNumbers)
+        assert [1, 2, 3, 4, 5] == data.columns[0].values
+        assert [0.25, 0.5, 1.0, 1.5, 2.0] == data.columns[1].values
+
+        data = twoColumnFiveRowTable.readCoordinates([3, 1, 4, 0, 2])
+        assert 2 == len(data.columns)
+        assert 5 == len(data.rowNumbers)
+        assert [4, 2, 5, 1, 3] == data.columns[0].values
+        assert [1.5, 0.5, 2.0, 0.25, 1.0] == data.columns[1].values
+
+    def testSliceEmptyInput(self, twoColumnFiveRowTable):
+
+        data = twoColumnFiveRowTable.slice(None, [2, 4])
+        assert 2 == len(data.columns)
+        assert [3, 5] == data.columns[0].values
+        assert [1.0, 2.0] == data.columns[1].values
+        assert 2 == len(data.rowNumbers)
+
+        data = twoColumnFiveRowTable.slice([], [2, 4])
+        assert 2 == len(data.columns)
+        assert [3, 5] == data.columns[0].values
+        assert [1.0, 2.0] == data.columns[1].values
+        assert 2 == len(data.rowNumbers)
+
+        data = twoColumnFiveRowTable.slice([1], [])
+        assert 1 == len(data.columns)
+        assert [0.25, 0.5, 1.0, 1.5, 2.0] == data.columns[0].values
+        assert 5 == len(data.rowNumbers)
+
+        data = twoColumnFiveRowTable.slice([1], None)
+        assert 1 == len(data.columns)
+        assert [0.25, 0.5, 1.0, 1.5, 2.0] == data.columns[0].values
+        assert 5 == len(data.rowNumbers)
+
+        data = twoColumnFiveRowTable.slice([], [])
+        assert 2 == len(data.columns)
+        assert [1, 2, 3, 4, 5] == data.columns[0].values
+        assert [0.25, 0.5, 1.0, 1.5, 2.0] == data.columns[1].values
+        assert 5 == len(data.rowNumbers)
+
+        data = twoColumnFiveRowTable.slice(None, None)
+        assert 2 == len(data.columns)
+        assert [1, 2, 3, 4, 5] == data.columns[0].values
+        assert [0.25, 0.5, 1.0, 1.5, 2.0] == data.columns[1].values
+        assert 5 == len(data.rowNumbers)
+
+    def testReadCoordinatesInvalidInput(self, twoColumnFiveRowTable):
+        # rowNumbers must not be empty
+        with pytest.raises(omero.ApiUsageException):
+            twoColumnFiveRowTable.readCoordinates([])
+        with pytest.raises(omero.ApiUsageException):
+            twoColumnFiveRowTable.readCoordinates(None)
+
+        # rowNumbers must match the table rows
+        with pytest.raises(omero.ApiUsageException):
+            twoColumnFiveRowTable.readCoordinates([6])
+
+    def testReadInvalidInput(self, twoColumnFiveRowTable):
+        # colNumbers must not be empty
+        with pytest.raises(omero.ApiUsageException):
+            twoColumnFiveRowTable.read([], 0, 0)
+        with pytest.raises(omero.ApiUsageException):
+            twoColumnFiveRowTable.read(None, 0, 0)
+
+        # colNumbers must match table columns
+        with pytest.raises(omero.ApiUsageException):
+            twoColumnFiveRowTable.read([3], 0, 0)
+
+        # start, end cannot be null
+        with pytest.raises(ValueError):
+            twoColumnFiveRowTable.read([0], None, 0)
+        with pytest.raises(ValueError):
+            twoColumnFiveRowTable.read([0], 0, None)
+
+    def testSliceInvalidInput(self, twoColumnFiveRowTable):
+
+        # colNumbers must match number of columns
+        with pytest.raises(omero.ApiUsageException):
+            twoColumnFiveRowTable.slice([2], [])
+
+        # rowNumbers must match table rows
+        with pytest.raises(omero.ApiUsageException):
+            twoColumnFiveRowTable.slice([], [6])
+
+    @pytest.mark.broken(reason="start=0,end=0 to be reviewed")
+    def testReadEqual(self, twoColumnFiveRowTable):
+
+        # start=0, end=0 has a special contract
+        data = twoColumnFiveRowTable.read([0], 0, 0)
+        assert 1 == len(data.columns)
+        assert [1] == data.columns[0].values
+        assert [0] == data.rowNumbers
+
+        # [1, 2, 3, 4, 5][2:2] = []
+        data = twoColumnFiveRowTable.read([0], 2, 2)
+        assert 1 == len(data.columns)
+        assert [] == data.columns[0].values
+        assert 0 == len(data.rowNumbers)
+
+    def testReadStartEnd(self, twoColumnFiveRowTable):
+
+        # [1, 2, 3, 4, 5][0:1] = [1]
+        data = twoColumnFiveRowTable.read([0], 0, 1)
+        assert 1 == len(data.columns)
+        assert [1] == data.columns[0].values
+        assert [0] == data.rowNumbers
+
+        # [1, 2, 3, 4, 5][0:1] = [1, 2]
+        data = twoColumnFiveRowTable.read([0], 0, 2)
+        assert 1 == len(data.columns)
+        assert [1, 2] == data.columns[0].values
+        assert [0, 1] == data.rowNumbers
+
+        # [1, 2, 3, 4, 5][0:5] = [1, 2, 3, 4, 5]
+        data = twoColumnFiveRowTable.read([0], 0, 5)
+        assert 1 == len(data.columns)
+        assert [1, 2, 3, 4, 5] == data.columns[0].values
+        assert [0, 1, 2, 3, 4] == data.rowNumbers
+
+        # [1, 2, 3, 4, 5][2:5] = [3, 4, 5]
+        data = twoColumnFiveRowTable.read([0], 2, 5)
+        assert 1 == len(data.columns)
+        assert [3, 4, 5] == data.columns[0].values
+        assert [2, 3, 4] == data.rowNumbers
+
+        # [1, 2, 3, 4, 5][2:4] = [3, 4]
+        data = twoColumnFiveRowTable.read([0], 2, 4)
+        assert 1 == len(data.columns)
+        assert [3, 4] == data.columns[0].values
+        assert [2, 3] == data.rowNumbers
+
+    @pytest.mark.broken(reason="need to be reviewed")
+    def testReadOutOfRange(self, twoColumnFiveRowTable):
+
+        # [1, 2, 3, 4, 5][-1:5] = [5]
+        data = twoColumnFiveRowTable.read([0], -1, 5)
+        assert 1 == len(data.columns)
+        assert [5] == data.columns[0].values
+        assert [4] == data.rowNumbers
+
+        # [1, 2, 3, 4, 5][0:10] = [1, 2, 3, 4, 5]
+        data = twoColumnFiveRowTable.read([0], 0, 10)
+        assert 1 == len(data.columns)
+        assert [1, 2, 3, 4, 5] == data.columns[0].values
+        assert [0, 1, 2, 3, 4] == data.rowNumbers
+
+        # [1, 2, 3, 4, 5][0:-1] = [1, 2, 3, 4]
+        data = twoColumnFiveRowTable.read([0], 0, -1)
+        assert 1 == len(data.columns)
+        assert [1, 2, 3, 4] == data.columns[0].values
+        assert [0, 1, 2, 3] == data.rowNumbers
+
+        # [1, 2, 3, 4, 5][0:-4] = [1]
+        data = twoColumnFiveRowTable.read([0], 0, -4)
+        assert 1 == len(data.columns)
+        assert [1] == data.columns[0].values
+        assert [0] == data.rowNumbers
+
+        # [1, 2, 3, 4, 5][0:-5] = []
+        data = twoColumnFiveRowTable.read([0], 0, -5)
+        assert 1 == len(data.columns)
+        assert [] == data.columns[0].values
+        assert 0 == len(data.rowNumbers)
+
+    def testReadStartGreaterThanEnd(self, twoColumnFiveRowTable):
+
+        # [1, 2, 3, 4, 5][2:1] = []
+        data = twoColumnFiveRowTable.read([0], 2, 1)
+        assert 1 == len(data.columns)
+        assert [] == data.columns[0].values
+        assert 0 == len(data.rowNumbers)
+
+    def testAddData(self):
+
+        grid = self.client.sf.sharedResources()
+        table = grid.newTable(1, "/testAddData")
+        lc = columns.LongColumnI('lc', 'long', [1, 2, 3])
+        dc = columns.DoubleColumnI('dc', 'double', [0.25, 0.5, 1.0])
+        table.initialize([lc, dc])
+        table.addData([lc, dc])
+
+        data = table.slice([], [])
+        assert 2 == len(data.columns)
+        assert [1, 2, 3] == data.columns[0].values
+        assert [0.25, 0.5, 1.0] == data.columns[1].values
+        assert [0, 1, 2] == data.rowNumbers
+
+        # Test addData using the opened table
+        lc = columns.LongColumnI('lc', 'long', [4, 5])
+        dc = columns.DoubleColumnI('dc', 'double', [1.5, 2.0])
+        table.addData([lc, dc])
+        data = table.slice([], [])
+        assert 2 == len(data.columns)
+        assert [1, 2, 3, 4, 5] == data.columns[0].values
+        assert [0.25, 0.5, 1.0, 1.5, 2.0] == data.columns[1].values
+        assert [0, 1, 2, 3, 4] == data.rowNumbers
+
+        tid = unwrap(table.getOriginalFile().getId())
+        table.close()
+
+        # Test addData after reopening the table
+        table = grid.openTable(omero.model.OriginalFileI(tid))
+        lc = columns.LongColumnI('lc', 'long', [6, 7])
+        dc = columns.DoubleColumnI('dc', 'double', [2.5, 3.0])
+        table.addData([lc, dc])
+
+        data = table.slice([], [])
+        assert 2 == len(data.columns)
+        assert [1, 2, 3, 4, 5, 6, 7] == data.columns[0].values
+        assert [0.25, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0] == data.columns[1].values
+        assert [0, 1, 2, 3, 4, 5, 6] == data.rowNumbers
+
+        table.delete()
+        table.close()
+
+    def testUpdateFirstRow(self, twoColumnFiveRowTable):
+
+        updateData = omero.grid.Data()
+        updateData.rowNumbers = [0]
+        updateData.columns = [
+            columns.LongColumnI('lc', 'long', [6]),
+            columns.DoubleColumnI('dc', 'double', [2.5])
+        ]
+        twoColumnFiveRowTable.update(updateData)
+
+        data = twoColumnFiveRowTable.slice([], [])
+        assert 2 == len(data.columns)
+        assert [6, 2, 3, 4, 5] == data.columns[0].values
+        assert [2.5, 0.5, 1.0, 1.5, 2.0] == data.columns[1].values
+        assert [0, 1, 2, 3, 4] == data.rowNumbers
+
+    def testUpdateMultipleRows(self, twoColumnFiveRowTable):
+
+        updateData = omero.grid.Data()
+        updateData.rowNumbers = [0, 3, 4]
+        updateData.columns = [
+            columns.LongColumnI('lc', 'long', [1, 7, 8]),
+            columns.DoubleColumnI('dc', 'double', [0, 3.0, 3.5])
+        ]
+        twoColumnFiveRowTable.update(updateData)
+
+        data = twoColumnFiveRowTable.slice([], [])
+        assert 2 == len(data.columns)
+        assert [1, 2, 3, 7, 8] == data.columns[0].values
+        assert [0, 0.5, 1.0, 3.0, 3.5] == data.columns[1].values
+        assert [0, 1, 2, 3, 4] == data.rowNumbers
+
+    def testUpdateAllows(self, twoColumnFiveRowTable):
+
+        updateData = omero.grid.Data()
+        updateData.rowNumbers = [0, 1, 2, 3, 4]
+        updateData.columns = [
+            columns.LongColumnI('lc', 'long', [2, 3, 4, 5, 6]),
+            columns.DoubleColumnI('dc', 'double', [1.0, 1.5, 2.0, 2.5, 3.0])
+        ]
+        twoColumnFiveRowTable.update(updateData)
+
+        data = twoColumnFiveRowTable.slice([], [])
+        assert 2 == len(data.columns)
+        assert [2, 3, 4, 5, 6] == data.columns[0].values
+        assert [1.0, 1.5, 2.0, 2.5, 3.0] == data.columns[1].values
+        assert [0, 1, 2, 3, 4] == data.rowNumbers
+
+    def testCannotUpdateOutOfRange(self, twoColumnFiveRowTable):
+
+        updateData = omero.grid.Data()
+        updateData.rowNumbers = [5]
+        updateData.columns = [
+            columns.LongColumnI('lc', 'long', [2]),
+            columns.DoubleColumnI('dc', 'double', [1.0])
+        ]
+        # colNumbers must match number of columns
+        with pytest.raises(omero.ApiUsageException):
+            twoColumnFiveRowTable.update(updateData)
+
+        updateData.rowNumbers = [3, 5]
+        updateData.columns = [
+            columns.LongColumnI('lc', 'long', [1, 2]),
+            columns.DoubleColumnI('dc', 'double', [0.0, 1.0])
+        ]
+        # colNumbers must match number of columns
+        with pytest.raises(omero.ApiUsageException):
+            twoColumnFiveRowTable.update(updateData)
