@@ -470,13 +470,6 @@
   License:      Apache License, Version 2.0
   License File: apache-v2.0.txt
 
-  
-  Artifacts:    jcl-over-slf4j-*.jar
-  Project:      JCL 1.1.1 implemented over SLF4J.
-  Web Site:     http://www.slf4j.org
-  License:      MIT License
-  License File: slf4j.txt
-
 
   Artifacts:    jcommander-*.jar
   Project:      A Java framework to parse command line options with annotations.
@@ -589,13 +582,6 @@
   Web Site:     http://java.sun.com/products/jts
   License:      Sun License
   License File:
-
-
-  Artifacts:    jul-to-slf4j-*.jar
-  Project:      JUL to SLF4J bridge.
-  Web Site:     http://www.slf4j.org
-  License:      MIT License
-  License File: slf4j.txt
 
 
   Artifacts:    junit-*.jar
