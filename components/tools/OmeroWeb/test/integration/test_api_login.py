@@ -85,9 +85,10 @@ class TestLogin(IWebTest):
         assert (rsp['message'] ==
                 "POST only with username, password, server and csrftoken")
 
-    def test_login_csrf(self):
+    def test_login_missing_csrf(self):
         """
-        Tests that we can only login with CSRF
+        Test POST with missing X-CSRFToken in HTTP header
+
         """
         django_client = self.django_root_client
         # test the most recent version
@@ -98,7 +99,31 @@ class TestLogin(IWebTest):
                         status_code=403)
         rsp = json.loads(rsp.content)
         assert (rsp['message'] ==
-                ("CSRF Error. You need to include valid CSRF tokens for any"
+                ("CSRF Error."
+                 " CSRF token missing."
+                 " You need to include valid CSRF tokens for any"
+                 " POST, PUT, PATCH or DELETE operations."
+                 " You have to include CSRF token in the POST data or"
+                 " add the token to the HTTP header."))
+
+    def test_login_empty_csrf(self):
+        """
+        Test POST with empty X-CSRFToken value in HTTP header
+        """
+        django_client = self.django_root_client
+        # test the most recent version
+        version = api_settings.API_VERSIONS[-1]
+        request_url = reverse('api_login', kwargs={'api_version': version})
+        # POST without adding CSRF token
+        django_client.cookies["csrftoken"].value = ""
+        data = {'username': 'guest', 'password': 'fake', 'server': 1}
+        rsp = django_client.post(request_url, data, status_code=403)
+        rsp = json.loads(rsp.content)
+        assert (rsp['message'] ==
+                ("CSRF Error."
+                 " CSRF token from the 'X-Csrftoken' HTTP header has"
+                 " incorrect length."
+                 " You need to include valid CSRF tokens for any"
                  " POST, PUT, PATCH or DELETE operations."
                  " You have to include CSRF token in the POST data or"
                  " add the token to the HTTP header."))
