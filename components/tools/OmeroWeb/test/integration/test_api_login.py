@@ -22,7 +22,7 @@ Tests logging in with webgateway json api
 """
 
 import pytest
-from omeroweb.testlib import IWebTest, get_json, _response, post
+from omeroweb.testlib import IWebTest, get_json, post
 from django.urls import reverse, NoReverseMatch
 from omeroweb.api import api_settings
 from django.test import Client
@@ -87,46 +87,66 @@ class TestLogin(IWebTest):
 
     def test_login_missing_csrf(self):
         """
-        Test POST with missing X-CSRFToken in HTTP header
+        Test POST with missing CSRF token
 
         """
         django_client = self.django_root_client
         # test the most recent version
         version = api_settings.API_VERSIONS[-1]
         request_url = reverse('api_login', kwargs={'api_version': version})
-        # POST without adding CSRF token
-        rsp = _response(django_client, request_url, method='post',
-                        status_code=403)
-        rsp = json.loads(rsp.content)
-        assert (rsp['message'] ==
-                ("CSRF Error."
-                 " CSRF token missing."
-                 " You need to include valid CSRF tokens for any"
-                 " POST, PUT, PATCH or DELETE operations."
-                 " You have to include CSRF token in the POST data or"
-                 " add the token to the HTTP header."))
+        # POST without CSRF token
+        rsp = django_client.post(request_url)
+        assert rsp.status_code == 403
+        assert rsp.json()['message'] == (
+            "CSRF Error."
+            " CSRF token missing."
+            " You need to include valid CSRF tokens for any"
+            " POST, PUT, PATCH or DELETE operations."
+            " You have to include CSRF token in the POST data or"
+            " add the token to the HTTP header.")
 
     def test_login_empty_csrf(self):
         """
-        Test POST with empty X-CSRFToken value in HTTP header
+        Test POST with empty X-CSRFToken
         """
         django_client = self.django_root_client
         # test the most recent version
         version = api_settings.API_VERSIONS[-1]
         request_url = reverse('api_login', kwargs={'api_version': version})
-        # POST without adding CSRF token
-        django_client.cookies["csrftoken"].value = ""
+        # POST with an empty X-CSRFToken
         data = {'username': 'guest', 'password': 'fake', 'server': 1}
-        rsp = django_client.post(request_url, data, status_code=403)
-        rsp = json.loads(rsp.content)
-        assert (rsp['message'] ==
-                ("CSRF Error."
-                 " CSRF token from the 'X-Csrftoken' HTTP header has"
-                 " incorrect length."
-                 " You need to include valid CSRF tokens for any"
-                 " POST, PUT, PATCH or DELETE operations."
-                 " You have to include CSRF token in the POST data or"
-                 " add the token to the HTTP header."))
+        rsp = django_client.post(
+            request_url, data, headers={"X-CSRFToken": ""})
+        assert rsp.status_code == 403
+        assert rsp.json()['message'] == (
+            "CSRF Error."
+            " CSRF token from the 'X-Csrftoken' HTTP header has"
+            " incorrect length."
+            " You need to include valid CSRF tokens for any"
+            " POST, PUT, PATCH or DELETE operations."
+            " You have to include CSRF token in the POST data or"
+            " add the token to the HTTP header.")
+
+    def test_login_invalid_csrf(self):
+        """
+        Test POST with invalid X-CSRFToken
+        """
+        django_client = self.django_root_client
+        # test the most recent version
+        version = api_settings.API_VERSIONS[-1]
+        request_url = reverse('api_login', kwargs={'api_version': version})
+        # POST with an incorrect X-CSRFToken
+        data = {'username': 'root', 'password': 'fake', 'server': 1}
+        rsp = django_client.post(
+            request_url, data, headers={"X-CSRFToken": "0" * 64})
+        assert rsp.status_code == 403
+        assert rsp.json()['message'] == (
+            "CSRF Error."
+            " CSRF token from the 'X-Csrftoken' HTTP header incorrect."
+            " You need to include valid CSRF tokens for any"
+            " POST, PUT, PATCH or DELETE operations."
+            " You have to include CSRF token in the POST data or"
+            " add the token to the HTTP header.")
 
     @pytest.mark.parametrize("credentials", [
         [{'username': 'guest', 'password': 'fake', 'server': 1},
