@@ -57,7 +57,6 @@ class TestLogin(IWebTest):
         Tests that the base url for a given version provides other urls
         """
         django_client = self.django_root_client
-        # test the most recent version
         version = api_settings.API_VERSIONS[-1]
         request_url = reverse('api_base', kwargs={'api_version': version})
         rsp = get_json(django_client, request_url)
@@ -84,23 +83,34 @@ class TestLogin(IWebTest):
         Tests that we get a suitable message if we try to GET login_url
         """
         django_client = self.django_root_client
-        version = api_settings.API_VERSIONS[-1]
-        request_url = reverse('api_login', kwargs={'api_version': version})
-        rsp = get_json(django_client, request_url, status_code=405)
+        rsp = get_json(django_client, self.get_login_url(), status_code=405)
         assert (rsp['message'] ==
                 "POST only with username, password, server and csrftoken")
 
-    def test_login_missing_csrf(self):
+    def test_login_csrf_cookie_not_set(self):
+        """
+        Test POST with missing CSRF cookie
+
+        """
+        django_client = Client(enforce_csrf_checks=True)
+        rsp = django_client.post(self.get_login_url())
+        assert rsp.status_code == 403
+        assert rsp.json()['message'] == (
+            "CSRF Error."
+            " CSRF cookie not set."
+            " You need to include valid CSRF tokens for any"
+            " POST, PUT, PATCH or DELETE operations."
+            " You have to include CSRF token in the POST data or"
+            " add the token to the HTTP header.")
+
+    def test_login_missing_csrf_token(self):
         """
         Test POST with missing CSRF token
 
         """
-        django_client = self.django_root_client
-        # test the most recent version
-        version = api_settings.API_VERSIONS[-1]
-        request_url = reverse('api_login', kwargs={'api_version': version})
-        # POST without CSRF token
-        rsp = django_client.post(request_url)
+        django_client = Client(enforce_csrf_checks=True)
+        django_client.get(reverse("weblogin"))
+        rsp = django_client.post(self.get_login_url())
         assert rsp.status_code == 403
         assert rsp.json()['message'] == (
             "CSRF Error."
@@ -110,18 +120,15 @@ class TestLogin(IWebTest):
             " You have to include CSRF token in the POST data or"
             " add the token to the HTTP header.")
 
-    def test_login_empty_csrf(self):
+    def test_login_empty_csrf_token(self):
         """
-        Test POST with empty X-CSRFToken
+        Test POST with empty CSRF token
         """
-        django_client = self.django_root_client
-        # test the most recent version
-        version = api_settings.API_VERSIONS[-1]
-        request_url = reverse('api_login', kwargs={'api_version': version})
-        # POST with an empty X-CSRFToken
-        data = {'username': 'guest', 'password': 'fake', 'server': 1}
+        django_client = Client(enforce_csrf_checks=True)
+        django_client.get(reverse("weblogin"))
+        data = {'username': 'root', 'password': 'omero', 'server': 1}
         rsp = django_client.post(
-            request_url, data, headers={"X-CSRFToken": ""})
+            self.get_login_url(), data, headers={"X-CSRFToken": ""})
         assert rsp.status_code == 403
         assert rsp.json()['message'] == (
             "CSRF Error."
@@ -132,18 +139,15 @@ class TestLogin(IWebTest):
             " You have to include CSRF token in the POST data or"
             " add the token to the HTTP header.")
 
-    def test_login_invalid_csrf(self):
+    def test_login_invalid_csrf_token(self):
         """
-        Test POST with invalid X-CSRFToken
+        Test POST with invalid CSRF token
         """
-        django_client = self.django_root_client
-        # test the most recent version
-        version = api_settings.API_VERSIONS[-1]
-        request_url = reverse('api_login', kwargs={'api_version': version})
-        # POST with an incorrect X-CSRFToken
-        data = {'username': 'root', 'password': 'fake', 'server': 1}
+        django_client = Client(enforce_csrf_checks=True)
+        django_client.get(reverse("weblogin"))
+        data = {'username': 'root', 'password': 'omero', 'server': 1}
         rsp = django_client.post(
-            request_url, data, headers={"X-CSRFToken": "0" * 64})
+            self.get_login_url(), data, headers={"X-CSRFToken": "0" * 64})
         assert rsp.status_code == 403
         assert rsp.json()['message'] == (
             "CSRF Error."
