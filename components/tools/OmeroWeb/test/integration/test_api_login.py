@@ -35,6 +35,11 @@ class TestLogin(IWebTest):
     Tests login workflow: getting url, csfv tokens etc.
     """
 
+    def get_login_url(self):
+        # test the most recent version
+        version = api_settings.API_VERSIONS[-1]
+        return reverse('api_login', kwargs={'api_version': version})
+
     def test_versions(self):
         """
         Start at the base url, get versions
