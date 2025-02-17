@@ -26,6 +26,7 @@ from omeroweb.testlib import IWebTest, get_json
 from django.urls import reverse, NoReverseMatch
 from omeroweb.api import api_settings
 from django.test import Client
+from django.test.client import MULTIPART_CONTENT
 from omero_marshal import OME_SCHEMA_URL
 
 
@@ -155,7 +156,9 @@ class TestLogin(IWebTest):
              "Password: This field is required. "
              "Server: This field is required.")]
         ])
-    def test_login_errors(self, credentials):
+    @pytest.mark.parametrize("content_type", (
+        MULTIPART_CONTENT, "application/json"))
+    def test_login_errors(self, credentials, content_type):
         """
         Tests that we get expected form validation errors if try to login
         without required fields, as 'guest' or with invalid username/password.
@@ -168,7 +171,8 @@ class TestLogin(IWebTest):
         rsp = client.post(
             self.get_login_url(),
             data,
-            headers={"X-CSRFToken": csrf_token})
+            headers={"X-CSRFToken": csrf_token},
+            content_type=content_type)
         assert rsp.status_code == 403
         assert rsp.json()['message'] == message
 
