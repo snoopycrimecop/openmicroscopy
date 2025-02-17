@@ -22,12 +22,11 @@ Tests logging in with webgateway json api
 """
 
 import pytest
-from omeroweb.testlib import IWebTest, get_json, post
+from omeroweb.testlib import IWebTest, get_json
 from django.urls import reverse, NoReverseMatch
 from omeroweb.api import api_settings
 from django.test import Client
 from omero_marshal import OME_SCHEMA_URL
-import json
 
 
 class TestLogin(IWebTest):
@@ -150,22 +149,28 @@ class TestLogin(IWebTest):
              "Server: This field is required.")],
         [{'username': 'nobody', 'password': 'fake', 'server': 1},
             ("Connection not available, "
-             "please check your user name and password.")]
+             "please check your user name and password.")],
+        [{'user': 1},
+            ("Username: This field is required. "
+             "Password: This field is required. "
+             "Server: This field is required.")]
         ])
     def test_login_errors(self, credentials):
         """
         Tests that we get expected form validation errors if try to login
         without required fields, as 'guest' or with invalid username/password.
         """
-        django_client = self.django_root_client
-        # test the most recent version
-        version = api_settings.API_VERSIONS[-1]
-        request_url = reverse('api_login', kwargs={'api_version': version})
+        client = Client(enforce_csrf_checks=True)
+        client.get(reverse("weblogin"))
+        csrf_token = client.cookies["csrftoken"].value
         data = credentials[0]
         message = credentials[1]
-        rsp = post(django_client, request_url, data, status_code=403)
-        rsp = json.loads(rsp.content)
-        assert rsp['message'] == message
+        rsp = client.post(
+            self.get_login_url(),
+            data,
+            headers={"X-CSRFToken": csrf_token})
+        assert rsp.status_code == 403
+        assert rsp.json()['message'] == message
 
     def test_login_example(self):
         """
