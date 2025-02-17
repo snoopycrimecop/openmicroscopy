@@ -96,12 +96,7 @@ class TestLogin(IWebTest):
         rsp = django_client.post(self.get_login_url())
         assert rsp.status_code == 403
         assert rsp.json()['message'] == (
-            "CSRF Error."
-            " CSRF cookie not set."
-            " You need to include valid CSRF tokens for any"
-            " POST, PUT, PATCH or DELETE operations."
-            " You have to include CSRF token in the POST data or"
-            " add the token to the HTTP header.")
+            "CSRF Failed: CSRF cookie not set.")
 
     def test_login_missing_csrf_token(self):
         """
@@ -113,12 +108,7 @@ class TestLogin(IWebTest):
         rsp = django_client.post(self.get_login_url())
         assert rsp.status_code == 403
         assert rsp.json()['message'] == (
-            "CSRF Error."
-            " CSRF token missing."
-            " You need to include valid CSRF tokens for any"
-            " POST, PUT, PATCH or DELETE operations."
-            " You have to include CSRF token in the POST data or"
-            " add the token to the HTTP header.")
+            "CSRF Failed: CSRF token missing.")
 
     def test_login_empty_csrf_token(self):
         """
@@ -131,13 +121,9 @@ class TestLogin(IWebTest):
             self.get_login_url(), data, headers={"X-CSRFToken": ""})
         assert rsp.status_code == 403
         assert rsp.json()['message'] == (
-            "CSRF Error."
-            " CSRF token from the 'X-Csrftoken' HTTP header has"
-            " incorrect length."
-            " You need to include valid CSRF tokens for any"
-            " POST, PUT, PATCH or DELETE operations."
-            " You have to include CSRF token in the POST data or"
-            " add the token to the HTTP header.")
+            "CSRF Failed: "
+            "CSRF token from the 'X-Csrftoken' HTTP header has incorrect "
+            "length.")
 
     def test_login_invalid_csrf_token(self):
         """
@@ -150,12 +136,8 @@ class TestLogin(IWebTest):
             self.get_login_url(), data, headers={"X-CSRFToken": "0" * 64})
         assert rsp.status_code == 403
         assert rsp.json()['message'] == (
-            "CSRF Error."
-            " CSRF token from the 'X-Csrftoken' HTTP header incorrect."
-            " You need to include valid CSRF tokens for any"
-            " POST, PUT, PATCH or DELETE operations."
-            " You have to include CSRF token in the POST data or"
-            " add the token to the HTTP header.")
+            "CSRF Failed: "
+            "CSRF token from the 'X-Csrftoken' HTTP header incorrect.")
 
     @pytest.mark.parametrize("credentials", [
         [{'username': 'guest', 'password': 'fake', 'server': 1},
