@@ -176,7 +176,9 @@ class TestLogin(IWebTest):
         assert rsp.status_code == 403
         assert rsp.json()['message'] == message
 
-    def test_login_example(self):
+    @pytest.mark.parametrize("content_type", (
+        MULTIPART_CONTENT, "application/json"))
+    def test_login_example(self, content_type):
         """
         Example of successful login as user would do for real,
         starting at base url and getting all other urls and info from there.
@@ -224,10 +226,13 @@ class TestLogin(IWebTest):
             'server': server_id,
             # 'csrfmiddlewaretoken': token,
         }
-        login_rsp = django_client.post(login_url, data)
-        login_json = json.loads(login_rsp.content)
-        assert login_json['success']
-        event_context = login_json['eventContext']
+        login_rsp = django_client.post(
+            login_url,
+            data,
+            content_type=content_type)
+        assert login_rsp.status_code == 200
+        assert login_rsp.json()['success']
+        event_context = login_rsp.json()['eventContext']
         # eventContext gives a bunch of info
         member_of_groups = event_context['memberOfGroups']
         current_group = event_context['groupId']
