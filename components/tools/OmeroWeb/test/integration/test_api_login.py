@@ -22,18 +22,23 @@ Tests logging in with webgateway json api
 """
 
 import pytest
-from omeroweb.testlib import IWebTest, get_json, _response, post
+from omeroweb.testlib import IWebTest, get_json
 from django.urls import reverse, NoReverseMatch
 from omeroweb.api import api_settings
 from django.test import Client
+from django.test.client import MULTIPART_CONTENT
 from omero_marshal import OME_SCHEMA_URL
-import json
 
 
 class TestLogin(IWebTest):
     """
     Tests login workflow: getting url, csfv tokens etc.
     """
+
+    def get_login_url(self):
+        # test the most recent version
+        version = api_settings.API_VERSIONS[-1]
+        return reverse('api_login', kwargs={'api_version': version})
 
     def test_versions(self):
         """
@@ -52,7 +57,6 @@ class TestLogin(IWebTest):
         Tests that the base url for a given version provides other urls
         """
         django_client = self.django_root_client
-        # test the most recent version
         version = api_settings.API_VERSIONS[-1]
         request_url = reverse('api_base', kwargs={'api_version': version})
         rsp = get_json(django_client, request_url)
@@ -79,29 +83,61 @@ class TestLogin(IWebTest):
         Tests that we get a suitable message if we try to GET login_url
         """
         django_client = self.django_root_client
-        version = api_settings.API_VERSIONS[-1]
-        request_url = reverse('api_login', kwargs={'api_version': version})
-        rsp = get_json(django_client, request_url, status_code=405)
+        rsp = get_json(django_client, self.get_login_url(), status_code=405)
         assert (rsp['message'] ==
                 "POST only with username, password, server and csrftoken")
 
-    def test_login_csrf(self):
+    def test_login_csrf_cookie_not_set(self):
         """
-        Tests that we can only login with CSRF
+        Test POST with missing CSRF cookie
+
         """
-        django_client = self.django_root_client
-        # test the most recent version
-        version = api_settings.API_VERSIONS[-1]
-        request_url = reverse('api_login', kwargs={'api_version': version})
-        # POST without adding CSRF token
-        rsp = _response(django_client, request_url, method='post',
-                        status_code=403)
-        rsp = json.loads(rsp.content)
-        assert (rsp['message'] ==
-                ("CSRF Error. You need to include valid CSRF tokens for any"
-                 " POST, PUT, PATCH or DELETE operations."
-                 " You have to include CSRF token in the POST data or"
-                 " add the token to the HTTP header."))
+        django_client = Client(enforce_csrf_checks=True)
+        rsp = django_client.post(self.get_login_url())
+        assert rsp.status_code == 403
+        assert rsp.json()['message'] == (
+            "CSRF Failed: CSRF cookie not set.")
+
+    def test_login_missing_csrf_token(self):
+        """
+        Test POST with missing CSRF token
+
+        """
+        django_client = Client(enforce_csrf_checks=True)
+        django_client.get(reverse("weblogin"))
+        rsp = django_client.post(self.get_login_url())
+        assert rsp.status_code == 403
+        assert rsp.json()['message'] == (
+            "CSRF Failed: CSRF token missing.")
+
+    def test_login_empty_csrf_token(self):
+        """
+        Test POST with empty CSRF token
+        """
+        django_client = Client(enforce_csrf_checks=True)
+        django_client.get(reverse("weblogin"))
+        data = {'username': 'root', 'password': 'omero', 'server': 1}
+        rsp = django_client.post(
+            self.get_login_url(), data, headers={"X-CSRFToken": ""})
+        assert rsp.status_code == 403
+        assert rsp.json()['message'] == (
+            "CSRF Failed: "
+            "CSRF token from the 'X-Csrftoken' HTTP header has incorrect "
+            "length.")
+
+    def test_login_invalid_csrf_token(self):
+        """
+        Test POST with invalid CSRF token
+        """
+        django_client = Client(enforce_csrf_checks=True)
+        django_client.get(reverse("weblogin"))
+        data = {'username': 'root', 'password': 'omero', 'server': 1}
+        rsp = django_client.post(
+            self.get_login_url(), data, headers={"X-CSRFToken": "0" * 64})
+        assert rsp.status_code == 403
+        assert rsp.json()['message'] == (
+            "CSRF Failed: "
+            "CSRF token from the 'X-Csrftoken' HTTP header incorrect.")
 
     @pytest.mark.parametrize("credentials", [
         [{'username': 'guest', 'password': 'fake', 'server': 1},
@@ -114,24 +150,35 @@ class TestLogin(IWebTest):
              "Server: This field is required.")],
         [{'username': 'nobody', 'password': 'fake', 'server': 1},
             ("Connection not available, "
-             "please check your user name and password.")]
+             "please check your user name and password.")],
+        [{'user': 1},
+            ("Username: This field is required. "
+             "Password: This field is required. "
+             "Server: This field is required.")]
         ])
-    def test_login_errors(self, credentials):
+    @pytest.mark.parametrize("content_type", (
+        MULTIPART_CONTENT, "application/json"))
+    def test_login_errors(self, credentials, content_type):
         """
         Tests that we get expected form validation errors if try to login
         without required fields, as 'guest' or with invalid username/password.
         """
-        django_client = self.django_root_client
-        # test the most recent version
-        version = api_settings.API_VERSIONS[-1]
-        request_url = reverse('api_login', kwargs={'api_version': version})
+        client = Client(enforce_csrf_checks=True)
+        client.get(reverse("weblogin"))
+        csrf_token = client.cookies["csrftoken"].value
         data = credentials[0]
         message = credentials[1]
-        rsp = post(django_client, request_url, data, status_code=403)
-        rsp = json.loads(rsp.content)
-        assert rsp['message'] == message
+        rsp = client.post(
+            self.get_login_url(),
+            data,
+            headers={"X-CSRFToken": csrf_token},
+            content_type=content_type)
+        assert rsp.status_code == 403
+        assert rsp.json()['message'] == message
 
-    def test_login_example(self):
+    @pytest.mark.parametrize("content_type", (
+        MULTIPART_CONTENT, "application/json"))
+    def test_login_example(self, content_type):
         """
         Example of successful login as user would do for real,
         starting at base url and getting all other urls and info from there.
@@ -179,10 +226,13 @@ class TestLogin(IWebTest):
             'server': server_id,
             # 'csrfmiddlewaretoken': token,
         }
-        login_rsp = django_client.post(login_url, data)
-        login_json = json.loads(login_rsp.content)
-        assert login_json['success']
-        event_context = login_json['eventContext']
+        login_rsp = django_client.post(
+            login_url,
+            data,
+            content_type=content_type)
+        assert login_rsp.status_code == 200
+        assert login_rsp.json()['success']
+        event_context = login_rsp.json()['eventContext']
         # eventContext gives a bunch of info
         member_of_groups = event_context['memberOfGroups']
         current_group = event_context['groupId']
