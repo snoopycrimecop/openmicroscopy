@@ -40,7 +40,7 @@ size_z = image.getSizeZ()
 size_c = image.getSizeC()
 size_t = image.getSizeT()
 t, c = 0, 0                     # first plane of the image
-z = size_z/2                     # at the mid Z-section
+z = size_z // 2                     # at the mid Z-section
 x, y, w, h = 5, 5, 100, 100        # Our pre-defined x, y, w, h
 tile = (x, y, w, h)
 pixels = image.getPrimaryPixels()
@@ -57,7 +57,7 @@ print("Average :", average)
 # Advanced: For each time point, get a column of data (E.g. for kymograph)
 size_y = image.getSizeY()
 size_x = image.getSizeX()
-x = size_x/2
+x = size_x // 2
 y = 0
 width = 10        # we were asked for '1' but this looks nicer
 height = size_x
