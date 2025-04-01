@@ -40,7 +40,7 @@ print(channel_min_max)
 # Go through each channel (looping through Z and T not shown - go for mid-Z
 # only)
 # =================================================================
-z = image.getSizeZ() / 2
+z = image.getSizeZ() // 2
 t = 0
 c = 0
 for min_max in channel_min_max:
