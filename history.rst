@@ -5,7 +5,7 @@
 OMERO version history
 =====================
 
-5.6.15 (March 2025)
+5.6.15 (April 2025)
 -------------------
 
 This release includes the following upgrade of the OMERO.server Java components:
