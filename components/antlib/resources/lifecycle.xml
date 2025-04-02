@@ -205,7 +205,6 @@ omero.version=${omero.version}
                     <pathelement location="${classes.dir}"/>
                     <pathelement location="${test.dir}"/>
                 </classpath>
-                <jvmarg value="-XX:MaxPermSize=256m"/>
                 <jvmarg value="-XX:+IgnoreUnrecognizedVMOptions"/>
                 <jvmarg value="-Dlogback.configuration=logback-build.xml"/>
                 <jvmarg value="-Domero.db.name=${omero.db.name}"/>
