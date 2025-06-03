@@ -74,7 +74,7 @@ class TestISession(ITest):
         finally:
             client.__del__()
 
-    def testJoinSession_Helper(self):
+    def testJoinSession(self):
         test_user = self.new_user()
 
         client = omero.client()  # ok rather than new_client since has __del__
@@ -88,8 +88,6 @@ class TestISession(ITest):
         finally:
             client.__del__()
 
-    def testJoinSession(self):
-        suuid = self.testJoinSession_Helper()
         c1 = omero.client()  # ok rather than new_client since has __del__
         try:
             sf1 = c1.joinSession(suuid)
