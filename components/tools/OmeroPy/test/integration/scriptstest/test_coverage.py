@@ -63,7 +63,7 @@ class TestCoverage(ITest):
             client = OS.client("testUploadScript")
             print("done")
             """)
-        return scriptID
+        assert scriptID
 
     def testUserCantUploadOfficalScript(self):
         with pytest.raises(omero.SecurityViolation):
