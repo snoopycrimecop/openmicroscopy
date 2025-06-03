@@ -75,7 +75,7 @@ class TestTables(ITest):
         for i in range(len(x)):
             assert x[i] == y[i]
 
-    def testBlankTable(self):
+    def createBlankTable(self):
         grid = self.client.sf.sharedResources()
         repoMap = grid.repositories()
         repoObj = repoMap.descriptions[0]
@@ -92,7 +92,7 @@ class TestTables(ITest):
         # Not closing for re-use
 
     def testUpdate(self):
-        ofile = self.testBlankTable()
+        ofile = self.createBlankTable()
         grid = self.client.sf.sharedResources()
         table = grid.openTable(ofile)
         data = table.slice([0], [0])
@@ -656,7 +656,7 @@ class TestTables(ITest):
         Create an HDF5 file on the server, and then mark it read-only.
         The server should still allow you to load & read that file.
         """
-        self.testBlankTable()  # ofile
+        self.createBlankTable()  # ofile
 
         filename = self.unique_dir + "/file.txt"
         mrepo = self.get_managed_repo()
