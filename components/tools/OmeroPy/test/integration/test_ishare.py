@@ -467,7 +467,6 @@ class TestIShare(ITest):
 
         owned = share1.getOwnShares(False)
         assert 1 == len(owned)
-        return client_user1, sid, expiration
 
     def test1201b(self):
         new_group = self.new_group()

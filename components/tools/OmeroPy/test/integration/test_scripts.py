@@ -76,7 +76,6 @@ class TestScripts(ITest):
         ofile = self.query.get("OriginalFile", id)
         assert "/" == ofile.path.val
         assert "%s.py" % uuid == ofile.name.val
-        return svc, ofile
 
     def testDelete6905(self):
         """
