@@ -84,7 +84,6 @@ class TestISession(ITest):
             a = sf.getAdminService()
             suuid = a.getEventContext().sessionUuid
             sf.detachOnDestroy()
-            return suuid
         finally:
             client.__del__()
 
