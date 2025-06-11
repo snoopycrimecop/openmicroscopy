@@ -147,7 +147,7 @@ mask_array = numpy.fromfunction(
 # Set correct number of bytes per value
 mask_array = mask_array.astype(numpy.uint8)
 # Convert the mask to bytes
-mask_array = mask_array.tostring()
+mask_array = mask_array.tobytes()
 # Pack the bytes to a bit mask
 mask_packed = create_mask(mask_array, 1)
 
