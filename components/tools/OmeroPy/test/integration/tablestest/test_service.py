@@ -51,7 +51,7 @@ class TestTables(ITest):
         def arr(x):
             import numpy
             import tables
-            return numpy.fromstring(x, count=len(x), dtype=tables.UInt8Atom())
+            return numpy.frombuffer(x, count=len(x), dtype=tables.UInt8Atom())
 
         assert 1 == test.imageId[0]
         assert 3 == test.theZ[0]
