@@ -467,7 +467,6 @@ class TestIShare(ITest):
 
         owned = share1.getOwnShares(False)
         assert 1 == len(owned)
-        return client_user1, sid, expiration
 
     def test1201b(self):
         new_group = self.new_group()
@@ -776,10 +775,36 @@ class TestIShare(ITest):
         a share that was created some time ago and is being
         accessed again.
         """
-        client, sid, expiration = self.test1201()
-        admin = client.sf.getAdminService()
+
+        # create two users in one group
+        admin = self.client.sf.getAdminService()
+        group = self.new_group()
+        client, user1 = self.new_client_and_user(group)
+        client2, user2 = self.new_client_and_user(group)
+        assert admin.getMemberOfGroupIds(user1) == admin\
+            .getMemberOfGroupIds(user2)
+
+        # create share
         share = client.sf.getShareService()
-        session = client.sf.getSessionService()
+        description = "my description"
+        timeout = None
+        objects = []
+        experimenters = [user2]
+        guests = ["ident@emaildomain.com"]
+        enabled = True
+        sid = share.createShare(description, timeout, objects,
+                                experimenters, guests, enabled)
+
+        # check that owner and member can access share
+        self.assert_access(client, sid)
+        self.assert_access(client2, sid)
+
+        expiration = int(time.time() * 1000) + 86400
+        share.setExpiration(sid, rtime(expiration))
+        self.assert_expiration(expiration, share.getShare(sid))
+
+        share.setActive(sid, False)
+        assert share.getShare(sid).active.val is False
 
         # Regular reloading
         share.setActive(sid, True)
@@ -790,6 +815,7 @@ class TestIShare(ITest):
         self.assert_expiration(expiration, share.getShare(sid))
 
         # Forced closing
+        session = client.sf.getSessionService()
         assert -2 == session.closeSession(share.getShare(sid))
         share.activate(sid)
         admin.getEventContext()  # Refreshes
@@ -806,7 +832,7 @@ class TestIShare(ITest):
             shares.createShare("my description", None, [omero.model.ScreenI()],
                                [], [], True)
 
-    def test_OS_regular_user(self):
+    def create_image_and_share(self):
         # test regular user can activate a share
         # Owner of share
         owner, owner_obj = self.new_client_and_user(perms="rw----")
@@ -834,7 +860,7 @@ class TestIShare(ITest):
     def test_OS_non_member(self):
         # Non-members should not be able to use this method
         # Run setup
-        img, sid = self.test_OS_regular_user()
+        img, sid = self.create_image_and_share()
         non_member = self.new_client(perms="rw----")
         non_member_query = non_member.sf.getQueryService()
 
@@ -849,7 +875,7 @@ class TestIShare(ITest):
 
     def test_OS_admin_user(self):
         # Admin should be able to log into any share
-        img, sid = self.test_OS_regular_user()
+        img, sid = self.create_image_and_share()
         root_query = self.root.sf.getQueryService()
 
         # Try to access direct (in wrong group)

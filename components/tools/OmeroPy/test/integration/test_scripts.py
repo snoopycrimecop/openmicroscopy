@@ -44,7 +44,7 @@ class TestScripts(ITest):
 
     def testBasicUsage(self):
         svc = self.client.sf.getScriptService()
-        return svc
+        assert svc
 
     def testTicket1036(self):
         self.client.setInput("a", rstring("a"))
@@ -76,14 +76,21 @@ class TestScripts(ITest):
         ofile = self.query.get("OriginalFile", id)
         assert "/" == ofile.path.val
         assert "%s.py" % uuid == ofile.name.val
-        return svc, ofile
 
     def testDelete6905(self):
         """
         Delete of official scripts was broken in 4.3.2.
         """
-        svc, ofile = self.testUpload2562()
+        uuid = self.uuid()
+        f = self.pingfile()
+        svc = self.root.sf.getScriptService()
+        id = svc.uploadOfficialScript("../%s.py" % uuid, f.text())
+        ofile = self.query.get("OriginalFile", id)
+        assert "/" == ofile.path.val
+        assert "%s.py" % uuid == ofile.name.val
+
         svc.deleteScript(ofile.id.val)
+        assert self.query.find("OriginalFile", ofile.id.val) is None
 
     def testDelete11371(self):
         """

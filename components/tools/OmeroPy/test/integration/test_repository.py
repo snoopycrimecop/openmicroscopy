@@ -152,8 +152,8 @@ class TestManagedRepositoryMultiUser(AbstractRepoTest):
         mrepo1 = self.get_managed_repo(client1)
         mrepo2 = self.get_managed_repo(client2)
 
-        testdir1 = self.test_dir(client1)
-        testdir2 = self.test_dir(client2)
+        testdir1 = self.create_managed_dir(client1)
+        testdir2 = self.create_managed_dir(client2)
 
         return self.Fixture(client1, mrepo1, testdir1), \
             self.Fixture(client2, mrepo2, testdir2)
@@ -250,7 +250,7 @@ class TestManagedRepositoryMultiUser(AbstractRepoTest):
         group1 = self.new_group(perms="rw----")
         client1, user = self.new_client_and_user(group=group1)
         client1.sf.setSecurityContext(group1)
-        testdir1 = self.test_dir(client1)
+        testdir1 = self.create_managed_dir(client1)
         dirname = testdir1 + "/b/c"
         filename = dirname + "/file.txt"
 
