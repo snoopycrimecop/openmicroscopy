@@ -5,6 +5,43 @@
 OMERO version history
 =====================
 
+5.6.16 (June 2025)
+------------------
+
+This main focus of this release is the update of the dependencies of OMERO.server.
+This includes the removal of unnused dependencies as well as the upgrade of several
+libraries where the current version is associated with public vulnerabilities.
+It also includes a server fix when reading `omero.policy.binary_access` stored as a
+group configuration.
+The version of Bio-Formats bundled with the OMERO.server binary is bumped to 8.2.0
+and will invalidate previous Bio-Formats Memoizer cache files. Please
+refer to the upgrade guide for further information.
+Finally this release adds NumPy 2.3 support via OMERO.scripts 5.9.1
+shipped with the server binary, OMERO.py 5.21.0 and OMERO.web 5.29.1.
+
+The following OMERO.server dependencies have been upgraded:
+
+- `org.openmicroscopy:omero-blitz` from 5.8.2 to 5.8.3
+- `org.openmicroscopy:omero-common` from 5.7.2 to 5.7.3
+- `org.openmicroscopy:omero-gateway-java` from 5.10.2 to 5.10.3
+- `org.openmicroscopy:omero-model` from 5.7.2 to 5.7.3
+- `org.openmicroscopy:omero-server` from 5.7.2 to 5.7.3
+- `org.openmicroscopy:omero-renderer` from 5.6.2 to 5.6.3
+- `org.openmicroscopy:omero-romio` from 5.8.2 to 5.8.3
+- Spring Framework from 4.3.14 to 4.3.30
+- Spring Security LDAP from 4.2.4 to 4.2.20
+- `net.sf.ehcache:ehcache` from 2.10.4 to 2.10.9.2
+- `org.quartz-scheduler:quartz` from 2.2.1 to 2.4.0
+- `org.apache.calcite:calcite-core` from 1.20.0 to 1.35.0
+- `org.apache.xmlgraphics:batik-codec` from 1.9.1 to 1.19
+
+The following OMERO.server dependencies have been removed:
+
+- `org.apache.xmlgraphics:batik-all` in favor of `org.apache.xmlgraphics:batik-codec` and its dependencies
+- `com.jamonapi:jamon`
+- `edu.ucar:bufr`
+- `edu.ucar:udunits`
+
 5.6.15 (April 2025)
 -------------------
 
