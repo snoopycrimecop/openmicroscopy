@@ -238,6 +238,11 @@ class TestFindObject (object):
         timeAnn.setValue(1000)
         timeAnn.save()
         timeId = timeAnn.getId()
+        # map annotation...
+        mapAnn = omero.gateway.MapAnnotationWrapper(gatewaywrapper.gateway)
+        mapAnn.setValue([("key1", "value1"), ("key2", "value2")])
+        mapAnn.save()
+        mapId = mapAnn.getId()
 
         # list annotations of various types - check they include ones from
         # above
@@ -248,40 +253,54 @@ class TestFindObject (object):
         longs = list(gatewaywrapper.gateway.getObjects("LongAnnotation"))
         for lng in longs:
             assert lng.OMERO_TYPE == longAnn.OMERO_TYPE
+            assert isinstance(lng._obj, omero.model.LongAnnotationI)
         assert longId in [lng.getId() for lng in longs]
         bools = list(gatewaywrapper.gateway.getObjects("BooleanAnnotation"))
         for b in bools:
             assert b.OMERO_TYPE == boolAnn.OMERO_TYPE
+            assert isinstance(b._obj, omero.model.BooleanAnnotationI)
         assert boolId in [b.getId() for b in bools]
         comms = list(gatewaywrapper.gateway.getObjects("CommentAnnotation"))
         for c in comms:
             assert c.OMERO_TYPE == commAnn.OMERO_TYPE
+            assert isinstance(c._obj, omero.model.CommentAnnotationI)
         assert commId in [c.getId() for c in comms]
         files = list(gatewaywrapper.gateway.getObjects("FileAnnotation"))
         for f in files:
             assert f.OMERO_TYPE == fileAnn.OMERO_TYPE
+            assert isinstance(f._obj, omero.model.FileAnnotationI)
         assert fileId in [f.getId() for f in files]
         doubles = list(gatewaywrapper.gateway.getObjects("DoubleAnnotation"))
         for d in doubles:
             assert d.OMERO_TYPE == doubleAnn.OMERO_TYPE
+            assert isinstance(d._obj, omero.model.DoubleAnnotationI)
         assert doubleId in [d.getId() for d in doubles]
         terms = list(gatewaywrapper.gateway.getObjects("TermAnnotation"))
         for t in terms:
             assert t.OMERO_TYPE == termAnn.OMERO_TYPE
+            assert isinstance(t._obj, omero.model.TermAnnotationI)
         assert termId in [t.getId() for t in terms]
         times = list(gatewaywrapper.gateway.getObjects("TimestampAnnotation"))
         for t in times:
             assert t.OMERO_TYPE == timeAnn.OMERO_TYPE
+            assert isinstance(t._obj, omero.model.TimestampAnnotationI)
         assert timeId in [t.getId() for t in times]
+        maps = list(gatewaywrapper.gateway.getObjects("MapAnnotation"))
+        for m in maps:
+            assert m.OMERO_TYPE == mapAnn.OMERO_TYPE
+            assert isinstance(m._obj, omero.model.MapAnnotationI)
+        assert mapId in [m.getId() for m in maps]
 
         # delete what we created
         gatewaywrapper.gateway.deleteObjects(
-            "Annotation", [longId, boolId, fileId, commId, tagId], wait=True)
+            "Annotation", [longId, boolId, fileId, commId, tagId, mapId],
+            wait=True)
         assert gatewaywrapper.gateway.getObject("Annotation", longId) is None
         assert gatewaywrapper.gateway.getObject("Annotation", boolId) is None
         assert gatewaywrapper.gateway.getObject("Annotation", fileId) is None
         assert gatewaywrapper.gateway.getObject("Annotation", commId) is None
         assert gatewaywrapper.gateway.getObject("Annotation", tagId) is None
+        assert gatewaywrapper.gateway.getObject("Annotation", mapId) is None
 
 
 class TestGetObject (ITest):
