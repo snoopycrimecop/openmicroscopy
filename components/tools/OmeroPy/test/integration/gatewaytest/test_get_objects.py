@@ -285,6 +285,22 @@ class TestFindObject (object):
             assert t.OMERO_TYPE == timeAnn.OMERO_TYPE
             assert isinstance(t._obj, omero.model.TimestampAnnotationI)
         assert timeId in [t.getId() for t in times]
+
+        # Manually load MapAnnotations...
+        queryService = gatewaywrapper.gateway.getQueryService()
+        map_query = ("select obj from MapAnnotation obj "
+                     "join fetch obj.details.owner as owner "
+                     "join fetch obj.details.creationEvent")
+        all_query = ("select obj from Annotation obj "
+                     "join fetch obj.details.owner as owner "
+                     "join fetch obj.details.creationEvent")
+        params = omero.sys.ParametersI()
+        map_anns = queryService.findAllByQuery(map_query, params)
+        all_anns = queryService.findAllByQuery(all_query, params)
+        assert len(all_anns) > len(map_anns)
+        for m in map_anns:
+            assert isinstance(m, omero.model.MapAnnotationI)
+        # test getObjects() from https://github.com/ome/omero-py/pull/464
         maps = list(gatewaywrapper.gateway.getObjects("MapAnnotation"))
         for m in maps:
             assert m.OMERO_TYPE == mapAnn.OMERO_TYPE
