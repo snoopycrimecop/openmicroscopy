@@ -51,8 +51,9 @@ print("\nList Projects:")
 print("=" * 50)
 my_exp_id = conn.getUser().getId()
 default_group_id = conn.getEventContext().groupId
+# To query across all groups, use -1
+conn.SERVICE_OPTS.setOmeroGroup(default_group_id)
 for project in conn.getObjects("Project", opts={'owner': my_exp_id,
-                                                'group': default_group_id,
                                                 'order_by': 'lower(obj.name)',
                                                 'limit': 5, 'offset': 0}):
     print_obj(project)
