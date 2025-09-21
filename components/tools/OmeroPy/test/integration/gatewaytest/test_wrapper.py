@@ -53,7 +53,7 @@ class TestWrapper(object):
             image.getFormat(), omero.gateway.BlitzObjectWrapper), \
             "Should return a BlitzObjectWrapper"
         format = image.getFormat()
-        assert format.value == "Deltavision", \
+        assert format.value == "Fake", \
             "BlitzObjectWrapper should lazy-load the value"
         assert not hasattr(format.value, 'val'), "Shouldn't return rtype"
         assert not hasattr(format.getValue(), 'val'), "Shouldn't return rtype"
