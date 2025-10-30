@@ -12,6 +12,7 @@
     <variable name="OMERO_ETC"     value="etc/"/>
     <variable name="OMERO_JARS"    value="lib/server/"/>
     <variable name="OMERO_LOGS"    value="var/log/"/>
+    <variable name="OMERO_TMP"     value="var/tmp/"/>
     <variable name="OMERO_LOGFILE" value="${OMERO_LOGS}$${omero.name}.log"/>
     <!-- Note: you will also need to modify the etc/master.cfg property
          file if you want var/log to be completely unused -->
