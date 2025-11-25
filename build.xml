@@ -365,6 +365,7 @@ To get started using Eclipse, execute "ant build-dev" and import the top-level
     <target name="create-workdirs" depends="init">
         <mkdir dir="${dist.dir}/etc/grid"/>
         <mkdir dir="${dist.dir}/var"/>
+        <mkdir dir="${dist.dir}/var/tmp"/>
     </target>
 
     <target name="copy-luts" depends="init">
