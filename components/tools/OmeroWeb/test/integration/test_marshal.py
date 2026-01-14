@@ -53,6 +53,7 @@ class TestImgDetail(IWebTest):
         assert 'levels' not in img_data
         assert 'zoomLevelScaling' not in img_data
         assert 'tile_size' not in img_data
+        assert 'resolutions' not in img_data
 
         # Channels metadata
         assert len(img_data['channels']) == 1
@@ -157,6 +158,28 @@ class TestImgDetail(IWebTest):
             "2": 0.25,
             "3": 0.125,
             "4": 0.0625
+        }
+        assert img_data['resolutions'] == {
+            "0": {
+              "sizeX": 20000,
+              "sizeY": 20000
+            },
+            "1": {
+              "sizeX": 10000,
+              "sizeY": 10000
+            },
+            "2": {
+              "sizeX": 5000,
+              "sizeY": 5000
+            },
+            "3": {
+              "sizeX": 2500,
+              "sizeY": 2500
+            },
+            "4": {
+              "sizeX": 1250,
+              "sizeY": 1250
+            }
         }
 
         # Channels metadata
