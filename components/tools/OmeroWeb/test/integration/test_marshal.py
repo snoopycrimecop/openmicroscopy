@@ -34,7 +34,7 @@ class TestImgDetail(IWebTest):
 
     def test_image_detail(self):
         """
-        Download of archived files for a non-SPW Image.
+        Marshalling of non-SPW single resolution single channel image
         """
         user_name = "%s %s" % (self.user.firstName.val, self.user.lastName.val)
 
@@ -129,4 +129,123 @@ class TestImgDetail(IWebTest):
                 'gridx': 1,
                 'height': 24
             }
+        }
+
+    def test_pyramidal_image(self):
+        """
+        Marshalling of non-SPW multi-resolution RGB image
+        """
+        user_name = "%s %s" % (self.user.firstName.val, self.user.lastName.val)
+
+        # Import image with metadata and get ImageID
+        images = self.import_fake_file(
+            client=self.client, sizeX=20000, sizeY=20000, sizeC=3, rgb=3,
+            resolutions=5)
+        iid = images[0].id.val
+        json_url = reverse('webgateway_imageData_json', args=[iid])
+        data = {}
+        img_data = get_json(self.django_client, json_url, data,
+                            status_code=200)
+
+        # Not a big image - tiles should be False with no other tiles metadata
+        assert img_data['tiles'] is True
+        assert img_data['levels'] == 5
+        assert 'tile_size' in img_data
+        assert img_data['zoomLevelScaling'] == {
+            "0": 1,
+            "1": 0.5,
+            "2": 0.25,
+            "3": 0.125,
+            "4": 0.0625
+        }
+
+        # Channels metadata
+        assert len(img_data['channels']) == 3
+        assert img_data['channels'][0] == {
+            'color': "FF0000",
+            'active': True,
+            'window': {
+                'min': 0,
+                'max': 255,
+                'start': 0,
+                'end': 255
+            },
+            'family': 'linear',
+            'coefficient': 1.0,
+            'reverseIntensity': False,
+            'inverted': False,
+            'emissionWave': None,
+            'label': "0"
+        }
+        assert img_data['channels'][1] == {
+            'color': "00FF00",
+            'active': True,
+            'window': {
+                'min': 0,
+                'max': 255,
+                'start': 0,
+                'end': 255
+            },
+            'family': 'linear',
+            'coefficient': 1.0,
+            'reverseIntensity': False,
+            'inverted': False,
+            'emissionWave': None,
+            'label': "1"
+        }
+        assert img_data['channels'][2] == {
+            'color': "0000FF",
+            'active': True,
+            'window': {
+                'min': 0,
+                'max': 255,
+                'start': 0,
+                'end': 255
+            },
+            'family': 'linear',
+            'coefficient': 1.0,
+            'reverseIntensity': False,
+            'inverted': False,
+            'emissionWave': None,
+            'label': "2"
+        }
+        assert img_data['pixel_range'] == [0, 255]
+        assert img_data['rdefs'] == {
+            'defaultT': 0,
+            'model': "color",
+            'invertAxis': False,
+            'projection': "normal",
+            'defaultZ': 2
+        }
+
+        # Core image metadata
+        assert img_data['size'] == {
+            'width': 20000,
+            'height': 20000,
+            'z': 1,
+            't': 1,
+            'c': 3
+        }
+        assert img_data['meta']['pixelsType'] == "uint8"
+        assert img_data['meta']['projectName'] == "Multiple"
+        assert img_data['meta']['imageId'] == iid
+        assert img_data['meta']['imageAuthor'] == user_name
+        assert img_data['meta']['datasetId'] is None
+        assert img_data['meta']['projectDescription'] == ""
+        assert img_data['meta']['datasetName'] == "Multiple"
+        assert img_data['meta']['wellSampleId'] == ""
+        assert img_data['meta']['projectId'] is None
+        assert img_data['meta']['imageDescription'] == ""
+        assert img_data['meta']['wellId'] == ""
+        assert img_data['meta']['imageName'].endswith(".fake")
+        assert img_data['meta']['datasetDescription'] == ""
+        # Don't know exact timestamp of import
+        assert 'imageTimestamp' in img_data['meta']
+
+        # Permissions - User is owner. All perms are True
+        assert img_data['perms'] == {
+            'canAnnotate': True,
+            'canEdit': True,
+            'canDelete': True,
+            'canLink': True
         }
