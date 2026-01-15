@@ -238,7 +238,7 @@ class TestImgDetail(IWebTest):
             'model': "color",
             'invertAxis': False,
             'projection': "normal",
-            'defaultZ': 2
+            'defaultZ': 0
         }
 
         # Core image metadata
