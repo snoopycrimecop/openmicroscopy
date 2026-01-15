@@ -48,7 +48,7 @@ class TestImgDetail(IWebTest):
         img_data = get_json(self.django_client, json_url, data,
                             status_code=200)
 
-        # Not a big image - tiles should be False with no other tiles metadata
+        # Not a multi-resolution image
         assert img_data['tiles'] is False
         assert 'levels' not in img_data
         assert 'zoomLevelScaling' not in img_data
@@ -148,7 +148,7 @@ class TestImgDetail(IWebTest):
         img_data = get_json(self.django_client, json_url, data,
                             status_code=200)
 
-        # Not a big image - tiles should be False with no other tiles metadata
+        # Test resolutions metadata
         assert img_data['tiles'] is True
         assert img_data['levels'] == 5
         assert 'tile_size' in img_data
