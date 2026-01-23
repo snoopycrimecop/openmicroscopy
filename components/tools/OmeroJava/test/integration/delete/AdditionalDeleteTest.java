@@ -679,6 +679,10 @@ public class AdditionalDeleteTest extends AbstractServerTest {
     {
         OriginalFile file = new OriginalFileI();
         file.setName(omero.rtypes.rstring("testing"));
+        file.setPath(omero.rtypes.rstring("/dev/null"));
+        file.setHash(omero.rtypes.rstring("abc"));
+        file.setSize(omero.rtypes.rlong(1));
+        file.setMimetype(omero.rtypes.rstring("text/plain"));
         FileAnnotationI ann = new FileAnnotationI();
         ann.setFile(file);
         ann = (FileAnnotationI) iUpdate.saveAndReturnObject(ann);
