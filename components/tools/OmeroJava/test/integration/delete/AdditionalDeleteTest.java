@@ -11,7 +11,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
-import ome.testing.ObjectFactory;
 import omero.ApiUsageException;
 import omero.RObject;
 import omero.RType;
@@ -678,7 +677,12 @@ public class AdditionalDeleteTest extends AbstractServerTest {
     private FileAnnotationI mockAnnotation()
         throws Exception
     {
-        OriginalFile file = (OriginalFileI) new IceMapper().map(ObjectFactory.createFile());
+        OriginalFile file = new OriginalFileI();
+        file.setName(omero.rtypes.rstring("testing"));
+        file.setPath(omero.rtypes.rstring("/dev/null"));
+        file.setHash(omero.rtypes.rstring("abc"));
+        file.setSize(omero.rtypes.rlong(1));
+        file.setMimetype(omero.rtypes.rstring("text/plain"));
         FileAnnotationI ann = new FileAnnotationI();
         ann.setFile(file);
         ann = (FileAnnotationI) iUpdate.saveAndReturnObject(ann);
