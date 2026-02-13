@@ -22,7 +22,7 @@ for the Java processes. This change allows the server and notably Bio-Formats to
 fully functional on hardened environments where the `noexec` mount option has been set on
 the `/tmp` partitition.
 
-This version of OMERO.server has been tested with OMERO.py 5.22.0 and OMERO.web 5.30.1. We
+This version of OMERO.server has been tested with OMERO.py 5.22.0 and OMERO.web 5.31.0. We
 recommend to upgrade Python version to at least 3.10 and Django to version 5.2.
 
 The following OMERO.server dependencies have been upgraded:
