@@ -21,7 +21,7 @@ The following OMERO.server dependencies have been upgraded:
 
 - `org.openmicroscopy:omero-blitz` from 5.8.4 to 5.8.5
 - `org.openmicroscopy:omero-common` from 5.7.4 to 5.7.5
-- `org.openmicroscopy:omero-gateway-java` from 5.10.5 to 5.10.6
+- `org.openmicroscopy:omero-gateway` from 5.10.5 to 5.11.0
 - `org.openmicroscopy:omero-model` from 5.7.4 to 5.7.5
 - `org.openmicroscopy:omero-server` from 5.7.4 to 5.7.5
 - `org.openmicroscopy:omero-renderer` from 5.6.4 to 5.6.5
