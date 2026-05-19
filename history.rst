@@ -5,6 +5,28 @@
 OMERO version history
 =====================
 
+5.6.18 (May 2026)
+-----------------
+
+This is a bug-fix release of OMERO.server which includes:
+
+- an upgrade of Bio-Formats from 8.4.0 to 8.5.0. The new version will invalidate
+  previous Bio-Formats cache files. Please refer to the upgrade documentation
+  for further information.
+
+This version of OMERO.server has been tested with OMERO.py 5.22.1 and OMERO.web 5.31.0. We
+recommend upgrading Python to at least version 3.10 and Django to version 5.2.
+
+The following OMERO.server dependencies have been upgraded:
+
+- `org.openmicroscopy:omero-blitz` from 5.8.4 to 5.8.5
+- `org.openmicroscopy:omero-common` from 5.7.4 to 5.7.5
+- `org.openmicroscopy:omero-gateway` from 5.10.5 to 5.11.0
+- `org.openmicroscopy:omero-model` from 5.7.4 to 5.7.5
+- `org.openmicroscopy:omero-server` from 5.7.4 to 5.7.5
+- `org.openmicroscopy:omero-renderer` from 5.6.4 to 5.6.5
+- `org.openmicroscopy:omero-romio` from 5.8.4 to 5.8.5
+
 5.6.17 (February 2026)
 ----------------------
 
