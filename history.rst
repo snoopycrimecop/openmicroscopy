@@ -15,7 +15,7 @@ This is a bug-fix release of OMERO.server which includes:
   for further information.
 
 This version of OMERO.server has been tested with OMERO.py 5.22.1 and OMERO.web 5.31.0. We
-recommend to upgrade Python version to at least 3.10 and Django to version 5.2.
+recommend upgrading Python to at least version 3.10 and Django to version 5.2.
 
 The following OMERO.server dependencies have been upgraded:
 
