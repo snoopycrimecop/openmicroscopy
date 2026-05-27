@@ -27,6 +27,7 @@ from test_api_projects import get_update_service, \
     get_connection
 from test_api_images import assert_objects
 from omero.model import EllipseI, \
+    ExternalInfoI, \
     ImageI, \
     LengthI, \
     LineI, \
@@ -37,7 +38,7 @@ from omero.model import EllipseI, \
     RoiI
 
 from omero.model.enums import UnitsLength
-from omero.rtypes import rstring, rint, rdouble
+from omero.rtypes import rstring, rint, rdouble, rlong
 from omero import ValidationException
 
 
@@ -137,6 +138,12 @@ class TestContainers(IWebTest):
         roi = RoiI()
         for shape in shapes[:-1]:
             roi.addShape(shape)
+            # add externalInfo to shapes on image
+            extinfo = ExternalInfoI()
+            setattr(extinfo, "entityId", rlong(3))
+            setattr(extinfo, "entityType", rstring("test-entity-type"))
+            setattr(extinfo, "lsid", rstring("test-lsid"))
+            shape.details.externalInfo = extinfo
         roi.setImage(image)
         rois.append(roi)
 
@@ -170,6 +177,15 @@ class TestContainers(IWebTest):
 
         # ROIs on the image
         rsp = get_json(client, rois_url, {'image': image.id.val})
+        # Check that externalInfo is loaded
+        for roi in rsp['data']:
+            for shape in roi.get('shapes', []):
+                details = shape['omero:details']
+                extInf = details.get('externalInfo')
+                assert extInf is not None
+                assert extInf['EntityId'] == 3
+                assert extInf['EntityType'] == "test-entity-type"
+                assert extInf['Lsid'] == "test-lsid"
         assert_objects(conn, rsp['data'], rois[:2], dtype="Roi",
                        opts={'load_shapes': True})
 
