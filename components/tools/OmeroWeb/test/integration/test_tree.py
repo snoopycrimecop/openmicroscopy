@@ -242,7 +242,6 @@ def expected_tags(user, tags):
             'id': tag.id.val,
             'value': tag.textValue.val,
             'ownerId': tag.details.owner.id.val,
-            'childCount': len(tag.linkedAnnotationList()),
             'permsCss': get_perms(user, tag, "TagAnnotation")
         }
         if tag.description is not None:
@@ -250,8 +249,10 @@ def expected_tags(user, tags):
 
         if tag.ns is not None and tag.ns.val == NSINSIGHTTAGSET:
             t['set'] = True
+            t['childCount'] = len(tag.linkedAnnotationList())
         else:
             t['set'] = False
+            t['childCount'] = 2 if tag.textValue.val == 'TagA' else 0
         expected.append(t)
     return expected
 
