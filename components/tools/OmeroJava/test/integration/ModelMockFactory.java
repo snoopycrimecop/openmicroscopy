@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableList.Builder;
 
 import ome.formats.model.UnitsFactory;
 import ome.units.UNITS;
+import ome.xml.model.enums.PixelType;
 import omero.ServerError;
 import omero.api.ITypesPrx;
 import omero.model.*;
@@ -1213,5 +1214,90 @@ public class ModelMockFactory {
         }
         linkMethod.invoke(link, o, a, null); // Last is Ice.Current;
         return link;
+    }
+
+    /**
+     * Creates an OME-TIFF file from OME metadata using Bio-Formats.
+     *
+     * @param ome The OME metadata to convert.
+     * @return A temporary File containing the OME-TIFF.
+     * @throws Exception Thrown if an error occurred.
+     */
+    public File createOMETiffFile(ome.xml.model.OME ome) throws Exception {
+        if (ome == null || ome.sizeOfImageList() == 0) {
+            throw new IllegalArgumentException("OME metadata must contain at least one Image");
+        }
+
+        // Get dimensions from the OME metadata
+        ome.xml.model.Image image = ome.getImage(0);
+        ome.xml.model.Pixels pixels = image.getPixels();
+        int sizeX = pixels.getSizeX().getValue();
+        int sizeY = pixels.getSizeY().getValue();
+        int sizeZ = pixels.getSizeZ().getValue();
+        int sizeC = pixels.getSizeC().getValue();
+        int sizeT = pixels.getSizeT().getValue();
+
+        PixelType pixelType = pixels.getType();
+        if (pixelType == null) {
+            pixelType = PixelType.UINT8;
+        }
+
+        // Step 1: Write OME-XML to temp file (as metadata.ome.xml)
+        File xmlFile = File.createTempFile("metadata", ".ome.xml");
+        xmlFile.deleteOnExit();
+        ome.specification.XMLWriter xmlWriter = new ome.specification.XMLWriter();
+        xmlWriter.writeFile(xmlFile, ome, true);
+
+        // Step 2: Create reader and read the XML
+        loci.formats.ImageReader reader = new loci.formats.ImageReader();
+        reader.setId(xmlFile.getAbsolutePath());
+
+        // Step 3: Create fresh OMEXMLMetadata for writing (has proper internal structure)
+        loci.formats.ome.OMEXMLMetadata meta = (loci.formats.ome.OMEXMLMetadata)
+                loci.formats.MetadataTools.createOMEXMLMetadata();
+
+        // Step 4: Copy metadata from reader and populate pixels
+        // This creates the proper BinData structure needed for writing
+        loci.formats.MetadataTools.populatePixels(meta, reader, false, false);
+
+        // Step 5: Ensure SamplesPerPixel is set for all channels
+        for (int c = 0; c < sizeC; c++) {
+            if (meta.getChannelSamplesPerPixel(0, c) == null) {
+                meta.setChannelSamplesPerPixel(
+                        new ome.xml.model.primitives.PositiveInteger(1), 0, c);
+            }
+        }
+
+        // Step 6: Create OME-TIFF output file
+        File tiffFile = File.createTempFile("ome_tiff_", ".ome.tiff");
+        tiffFile.deleteOnExit();
+
+        // Step 7: Write with OMETiffWriter
+        loci.formats.out.OMETiffWriter writer = new loci.formats.out.OMETiffWriter();
+        writer.setMetadataRetrieve(meta);
+        writer.setId(tiffFile.getAbsolutePath());
+
+        // Step 8: Generate and write pixel data for each plane
+        int bytesPerPixel = loci.formats.FormatTools.getBytesPerPixel(
+                loci.formats.FormatTools.pixelTypeFromString(pixelType.toString()));
+        int planeSize = sizeX * sizeY * bytesPerPixel;
+        byte[] pixelData = new byte[planeSize];
+
+        int planeCount = sizeZ * sizeC * sizeT;
+        for (int plane = 0; plane < planeCount; plane++) {
+            // Generate pattern in pixel data (gradient based on plane)
+            for (int i = 0; i < planeSize; i++) {
+                pixelData[i] = (byte) ((i + plane) % 256);
+            }
+            writer.saveBytes(plane, pixelData);
+        }
+
+        writer.close();
+        reader.close();
+
+        // Cleanup temp XML file
+        xmlFile.delete();
+
+        return tiffFile;
     }
 }
