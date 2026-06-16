@@ -438,14 +438,11 @@ public class RenderingEngineTest extends AbstractServerTest {
      */
     @Test
     public void testRenderingEngineSetters() throws Exception {
-        File file = File.createTempFile("testRenderingEngineSetters", "."
-                + OME_FORMAT);
         XMLMockObjects xml = new XMLMockObjects();
-        XMLWriter writer = new XMLWriter();
-        writer.writeFile(file, xml.createImage(), true);
+        File file = mmFactory.createOMETiffFile(xml.createImage());
         List<Pixels> pixels = null;
         try {
-            pixels = importFile(file, OME_FORMAT);
+            pixels = importFile(file, OME_TIFF);
         } catch (Throwable e) {
             throw new Exception("cannot import image", e);
         }
@@ -1667,14 +1664,11 @@ public class RenderingEngineTest extends AbstractServerTest {
      */
     @Test
     public void testSaveCurrentSettingsMultipleTimes() throws Exception {
-        File file = File.createTempFile("testRenderingEngineSetters", "."
-                + OME_FORMAT);
         XMLMockObjects xml = new XMLMockObjects();
-        XMLWriter writer = new XMLWriter();
-        writer.writeFile(file, xml.createImage(), true);
+        File file = mmFactory.createOMETiffFile(xml.createImage());
         List<Pixels> pixels = null;
         try {
-            pixels = importFile(file, OME_FORMAT);
+            pixels = importFile(file, OME_TIFF);
         } catch (Throwable e) {
             throw new Exception("cannot import image", e);
         }
@@ -1710,14 +1704,11 @@ public class RenderingEngineTest extends AbstractServerTest {
      */
     @Test
     public void testSaveCurrentSettingsAll() throws Exception {
-        File file = File.createTempFile("testRenderingEngineSetters", "."
-                + OME_FORMAT);
         XMLMockObjects xml = new XMLMockObjects();
-        XMLWriter writer = new XMLWriter();
-        writer.writeFile(file, xml.createImage(), true);
+        File file = mmFactory.createOMETiffFile(xml.createImage());
         List<Pixels> pixels = null;
         try {
-            pixels = importFile(file, OME_FORMAT);
+            pixels = importFile(file, OME_TIFF);
         } catch (Throwable e) {
             throw new Exception("cannot import image", e);
         }
