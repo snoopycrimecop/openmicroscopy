@@ -1218,6 +1218,8 @@ public class ModelMockFactory {
 
     /**
      * Creates an OME-TIFF file from OME metadata using Bio-Formats.
+     * The full OME model is preserved in the embedded OME-XML, including
+     * ROIs and annotations.
      *
      * @param ome The OME metadata to convert.
      * @return A temporary File containing the OME-TIFF.
@@ -1228,9 +1230,8 @@ public class ModelMockFactory {
             throw new IllegalArgumentException("OME metadata must contain at least one Image");
         }
 
-        // Get dimensions from the OME metadata
-        ome.xml.model.Image image = ome.getImage(0);
-        ome.xml.model.Pixels pixels = image.getPixels();
+        // Get dimensions from the first image
+        ome.xml.model.Pixels pixels = ome.getImage(0).getPixels();
         int sizeX = pixels.getSizeX().getValue();
         int sizeY = pixels.getSizeY().getValue();
         int sizeZ = pixels.getSizeZ().getValue();
@@ -1242,25 +1243,22 @@ public class ModelMockFactory {
             pixelType = PixelType.UINT8;
         }
 
-        // Step 1: Write OME-XML to temp file (as metadata.ome.xml)
+        // Step 1: Serialise the full OME model to a temp .ome.xml companion file.
+        //         XMLWriter preserves ROIs, annotations and all other elements.
         File xmlFile = File.createTempFile("metadata", ".ome.xml");
         xmlFile.deleteOnExit();
-        ome.specification.XMLWriter xmlWriter = new ome.specification.XMLWriter();
-        xmlWriter.writeFile(xmlFile, ome, true);
+        new ome.specification.XMLWriter().writeFile(xmlFile, ome, true);
 
-        // Step 2: Create reader and read the XML
-        loci.formats.ImageReader reader = new loci.formats.ImageReader();
-        reader.setId(xmlFile.getAbsolutePath());
-
-        // Step 3: Create fresh OMEXMLMetadata for writing (has proper internal structure)
+        // Step 2: Attach a fresh OMEXMLMetadata store to the reader *before* opening
+        //         the file so that the reader populates it with the complete parsed
+        //         OME-XML (ROIs, annotations, etc.), not just pixel dimensions.
         loci.formats.ome.OMEXMLMetadata meta = (loci.formats.ome.OMEXMLMetadata)
                 loci.formats.MetadataTools.createOMEXMLMetadata();
+        loci.formats.ImageReader reader = new loci.formats.ImageReader();
+        reader.setMetadataStore(meta);
+        reader.setId(xmlFile.getAbsolutePath());
 
-        // Step 4: Copy metadata from reader and populate pixels
-        // This creates the proper BinData structure needed for writing
-        loci.formats.MetadataTools.populatePixels(meta, reader, false, false);
-
-        // Step 5: Ensure SamplesPerPixel is set for all channels
+        // Step 3: Ensure SamplesPerPixel is set for all channels (required by writer).
         for (int c = 0; c < sizeC; c++) {
             if (meta.getChannelSamplesPerPixel(0, c) == null) {
                 meta.setChannelSamplesPerPixel(
@@ -1268,25 +1266,21 @@ public class ModelMockFactory {
             }
         }
 
-        // Step 6: Create OME-TIFF output file
+        // Step 4: Write the OME-TIFF with the fully populated metadata store.
         File tiffFile = File.createTempFile("ome_tiff_", ".ome.tiff");
         tiffFile.deleteOnExit();
 
-        // Step 7: Write with OMETiffWriter
         loci.formats.out.OMETiffWriter writer = new loci.formats.out.OMETiffWriter();
         writer.setMetadataRetrieve(meta);
         writer.setId(tiffFile.getAbsolutePath());
 
-        // Step 8: Generate and write pixel data for each plane
+        // Step 5: Write synthetic pixel data for each plane.
         int bytesPerPixel = loci.formats.FormatTools.getBytesPerPixel(
                 loci.formats.FormatTools.pixelTypeFromString(pixelType.toString()));
-        int planeSize = sizeX * sizeY * bytesPerPixel;
-        byte[] pixelData = new byte[planeSize];
-
+        byte[] pixelData = new byte[sizeX * sizeY * bytesPerPixel];
         int planeCount = sizeZ * sizeC * sizeT;
         for (int plane = 0; plane < planeCount; plane++) {
-            // Generate pattern in pixel data (gradient based on plane)
-            for (int i = 0; i < planeSize; i++) {
+            for (int i = 0; i < pixelData.length; i++) {
                 pixelData[i] = (byte) ((i + plane) % 256);
             }
             writer.saveBytes(plane, pixelData);
@@ -1294,8 +1288,6 @@ public class ModelMockFactory {
 
         writer.close();
         reader.close();
-
-        // Cleanup temp XML file
         xmlFile.delete();
 
         return tiffFile;
