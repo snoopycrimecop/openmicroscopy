@@ -20,10 +20,11 @@ import pytest
 
 from omero.gateway.scripts import dbhelpers
 from omero.rtypes import wrap, rlong
-from omero.testlib import ITest
+from omero.testlib import ITest, rstring
 from omero.gateway import BlitzGateway, KNOWN_WRAPPERS, DatasetWrapper, \
     ProjectWrapper, ImageWrapper, ScreenWrapper, PlateWrapper
 from omero.model import DatasetI, \
+    ProjectI, \
     ImageI, \
     PlateI, \
     ScreenI, \
@@ -635,6 +636,93 @@ class TestGetObject (ITest):
         obj.removeAnnotations(ns)
         dataset.unlinkAnnotations(ns_tag)  # unlink tag
         obj.removeAnnotations(ns_tag)      # delete tag
+    
+
+    def testGetObjectsAnnotation(self):
+
+        # create new group and user - don't rely on existing test user/group
+
+        group = self.new_group(perms='rwra--')
+        client, user = self.new_client_and_user(group=group)
+
+        conn = BlitzGateway(client_obj=client)
+        update = conn.getUpdateService()
+
+        ns = "test_get_objects_annotation_comment"
+        ns_tag = "test_get_objects_annotation_tag"
+
+
+        def create_dataset_with_annotations(name, dtype="Dataset"):
+            if dtype == "Dataset":
+                obj = DatasetI()
+                obj.name = rstring(name)
+                obj = update.saveAndReturnObject(obj)
+                wrapper = omero.gateway.DatasetWrapper(conn, obj)
+            elif dtype == "Project":
+                obj = ProjectI()
+                obj.name = rstring(name)
+                obj = update.saveAndReturnObject(obj)
+                wrapper = omero.gateway.ProjectWrapper(conn, obj)
+
+            # create Comment
+            ann = omero.gateway.CommentAnnotationWrapper(conn)
+            ann.setNs(ns)
+            ann.setValue("Test Comment: " + name)
+            ann = wrapper.linkAnnotation(ann)
+            # create Tag
+            tag = omero.gateway.TagAnnotationWrapper(conn)
+            tag.setNs(ns_tag)
+            tag.setValue("Test Tag: " + name)
+            wrapper.linkAnnotation(tag)
+
+            return wrapper
+
+        dataset1 = create_dataset_with_annotations("Dataset 1")
+        dataset2 = create_dataset_with_annotations("Dataset 2")
+        project1 = create_dataset_with_annotations("Project 1", dtype="Project")
+
+        # get all annotations on one Dataset
+        annGen = conn.getObjects("Annotation", opts={'parent_type': "dataset", 'parent_ids': [dataset1.id]})
+        assert len(list(annGen)) == 2
+
+        # get all annotations on two Datasets
+        annGen = conn.getObjects("Annotation",
+                                 opts={'parent_type': "dataset", 'parent_ids': [dataset1.id, dataset2.id]})
+        assert len(list(annGen)) == 4
+
+        # get all annotations on ALL Datasets
+        annGen = conn.getObjects("Annotation", opts={'parent_type': "dataset"})
+        assert len(list(annGen)) == 4
+
+        # No annotations on PlateAcquisition (none created)
+        annGen = conn.getObjects("Annotation", opts={'parent_type': "plateacquisition"})
+        assert len(list(annGen)) == 0
+
+       # get ALL annotations
+        anns = list(conn.getObjects("Annotation"))
+        assert len(anns) == 6
+
+        # We only want Tags on the two Datasets
+        annGen = conn.getObjects("Annotation",
+                                 opts={'parent_type': "dataset", 'parent_ids': [dataset1.id, dataset2.id],
+                                       'ann_type': "tag"})
+        assert len(list(annGen)) == 2
+
+        # ALL Tags
+        annGen = conn.getObjects("Annotation", opts={'ann_type': "tag"})
+        assert len(list(annGen)) == 3
+
+        # filter by namespace
+        annGen = conn.getObjects("Annotation", opts={'ns': ns})
+        assert len(list(annGen)) == 3
+
+        # filter by namespace and type
+        annGen = conn.getObjects("Annotation", opts={'ns': ns, 'ann_type': "comment"})
+        assert len(list(annGen)) == 3
+        annGen = conn.getObjects("Annotation", opts={'ns': ns, 'ann_type': "tag"})
+        assert len(list(annGen)) == 0
+
+
 
     def testGetImage(self, gatewaywrapper, author_testimg_tiny):
         testImage = author_testimg_tiny
