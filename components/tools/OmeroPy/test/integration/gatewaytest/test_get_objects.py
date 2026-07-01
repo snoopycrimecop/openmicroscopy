@@ -649,6 +649,7 @@ class TestGetObject (ITest):
 
         ns = "test_get_objects_annotation_comment"
         ns_tag = "test_get_objects_annotation_tag"
+        ns_file = "test_get_objects_annotation_file"
 
         def create_dataset_with_annotations(name, dtype="Dataset"):
             if dtype == "Dataset":
@@ -682,6 +683,7 @@ class TestGetObject (ITest):
             fileObj.setSize(omero.rtypes.rlong(0))
             fileObj.save()
             fileAnn.setFile(fileObj)
+            fileAnn.setNs(ns_file)
             fileAnn.save()
             wrapper.linkAnnotation(fileAnn)
 
@@ -746,7 +748,7 @@ class TestGetObject (ITest):
                                  opts={'parent_type': "dataset",
                                        'parent_ids': [dataset1.id,
                                                       dataset2.id],
-                                       'ann_type': "file"})
+                                       'ns': ns_file})
         for ann in annGen:
             assert ann.getFile().getName() == 'fileName'
             assert ann.getFile().getPath() == 'path/to/file'
