@@ -674,6 +674,18 @@ class TestGetObject (ITest):
             tag.setNs(ns_tag)
             tag.setValue("Test Tag: " + name)
             wrapper.linkAnnotation(tag)
+            # create FileAnnotation
+            fileAnn = omero.gateway.FileAnnotationWrapper(conn)
+            fileObj = omero.model.OriginalFileI()
+            fileObj = omero.gateway.OriginalFileWrapper(conn, fileObj)
+            fileObj.setName(omero.rtypes.rstring('fileName'))
+            fileObj.setPath(omero.rtypes.rstring('path/to/file'))
+            fileObj.setHash(omero.rtypes.rstring('a'))
+            fileObj.setSize(omero.rtypes.rlong(0))
+            fileObj.save()
+            fileAnn.setFile(fileObj)
+            fileAnn.save()
+            wrapper.linkAnnotation(fileAnn)
 
             return wrapper
 
@@ -683,16 +695,16 @@ class TestGetObject (ITest):
 
         # get all annotations on one Dataset
         annGen = conn.getObjects("Annotation", opts={'parent_type': "dataset", 'parent_ids': [dataset1.id]})
-        assert len(list(annGen)) == 2
+        assert len(list(annGen)) == 3
 
         # get all annotations on two Datasets
         annGen = conn.getObjects("Annotation",
                                  opts={'parent_type': "dataset", 'parent_ids': [dataset1.id, dataset2.id]})
-        assert len(list(annGen)) == 4
+        assert len(list(annGen)) == 6
 
         # get all annotations on ALL Datasets
         annGen = conn.getObjects("Annotation", opts={'parent_type': "dataset"})
-        assert len(list(annGen)) == 4
+        assert len(list(annGen)) == 6
 
         # No annotations on PlateAcquisition (none created)
         annGen = conn.getObjects("Annotation", opts={'parent_type': "plateacquisition"})
@@ -700,7 +712,7 @@ class TestGetObject (ITest):
 
        # get ALL annotations
         anns = list(conn.getObjects("Annotation"))
-        assert len(anns) == 6
+        assert len(anns) == 9
 
         # We only want Tags on the two Datasets
         annGen = conn.getObjects("Annotation",
@@ -722,6 +734,14 @@ class TestGetObject (ITest):
         annGen = conn.getObjects("Annotation", opts={'ns': ns, 'ann_type': "tag"})
         assert len(list(annGen)) == 0
 
+        # test "file" annotation is loaded
+        annGen = conn.getObjects("Annotation",
+                                 opts={'parent_type': "dataset",
+                                       'parent_ids': [dataset1.id, dataset2.id],
+                                       'ann_type': "file"})
+        for ann in annGen:
+            assert ann.getFile().getName() == 'fileName'
+            assert ann.getFile().getPath() == 'path/to/file'
 
 
     def testGetImage(self, gatewaywrapper, author_testimg_tiny):
