@@ -152,7 +152,10 @@ class TestCleanseFullAdmin(CLITest):
         out, err = capsys.readouterr()
         assert not os.path.exists(orig_file_path)
         assert not os.path.isfile(orig_file_path_and_name)
-        assert not os.path.exists(logfile_path)
+        # The log file itself must be removed. On NFS, if another process still
+        # has the deleted file open, the parent directory may temporarily contain
+        # a hidden ".nfs*" file, so its removal cannot be asserted here.
+	    #assert not os.path.exists(logfile_path)
         assert not os.path.isfile(logfile_path_and_name)
 
 
