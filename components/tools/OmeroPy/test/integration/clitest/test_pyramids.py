@@ -248,14 +248,18 @@ class TestRemovePyramidsFullAdmin(CLITest):
         pixels_id = next(iter(image.copyPixels())).id.val
 
         pyramid = None
+        pixels_dir = "/home/omero/workspace/OMERO-test-integration/data/Pixels"
+        pyramid_name = f"{pixels_id}_pyramid"
+
         for _ in range(60):
-            for root, _, files in os.walk(
-                    "/home/omero/workspace/OMERO-test-integration/data/Pixels"):
-                if f"{pixels_id}_pyramid" in files:
-                    pyramid = os.path.join(root, f"{pixels_id}_pyramid")
+            for root, _, files in os.walk(pixels_dir):
+                if pyramid_name in files:
+                    pyramid = os.path.join(root, pyramid_name)
                     break
+
             if pyramid:
                 break
+
             time.sleep(1)
 
         assert pyramid is not None, \
