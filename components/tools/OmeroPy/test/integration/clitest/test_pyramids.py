@@ -32,6 +32,7 @@ import omero.plugins.admin
 import pytest
 import datetime
 import hashlib
+import time
 
 
 class TestRemovePyramids(CLITest):
@@ -139,10 +140,37 @@ class TestRemovePyramidsFullAdmin(CLITest):
             new_sink.close()
 
     def test_remove_pyramids_little_endian(self, tmpdir, capsys):
-        """Test removepyramids with litlle endian true"""
+        """Test removepyramids with little endian true"""
         img_id = self.import_pyramid(tmpdir)
+
+        # Find the Pixels ID corresponding to the imported image
+        query_service = self.client.sf.getQueryService()
+        rows = unwrap(query_service.projection(
+            "select p.id from Image i join i.pixels p where i.id = :id",
+            ParametersI().addId(img_id)
+        ))
+        pixels_id = rows[0][0]
+
+        # Wait until the pyramid file actually exists on disk
+        pixels_dir = "/home/omero/workspace/OMERO-test-integration/data/Pixels"
+        expected = f"{pixels_id}_pyramid"
+        deadline = time.time() + 120
+
+        while time.time() < deadline:
+            found = False
+            for root, _, files in os.walk(pixels_dir):
+                if expected in files:
+                    found = True
+                    break
+            if found:
+                break
+            time.sleep(1)
+        else:
+            pytest.fail(f"Timed out waiting for pyramid file {expected}")
+
         self.args += ["--endian=little"]
         self.cli.invoke(self.args, strict=True)
+
         out, err = capsys.readouterr()
         output_start = "Pyramid removed for image %s" % img_id
         assert output_start in out
