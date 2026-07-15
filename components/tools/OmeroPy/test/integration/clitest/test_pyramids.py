@@ -234,14 +234,39 @@ class TestRemovePyramidsFullAdmin(CLITest):
         assert reason in out
 
     def test_remove_pyramids_big_endian(self, tmpdir, capsys):
-        """Test removepyramids with litlle endian true"""
+        """Test removepyramids with big endian true"""
+
         name = "big&sizeX=3500&sizeY=3500&little=false.fake"
         img_id = self.import_pyramid(tmpdir, name=name, skip=None)
+
+        query_service = self.client.sf.getQueryService()
+        image = query_service.findByQuery(
+            "select i from Image i join fetch i.pixels p where i.id = :id",
+            ParametersI().addId(img_id)
+        )
+
+        pixels_id = next(iter(image.copyPixels())).id.val
+
+        pyramid = None
+        for _ in range(60):
+            for root, _, files in os.walk(
+                    "/home/omero/workspace/OMERO-test-integration/data/Pixels"):
+                if f"{pixels_id}_pyramid" in files:
+                    pyramid = os.path.join(root, f"{pixels_id}_pyramid")
+                    break
+            if pyramid:
+                break
+            time.sleep(1)
+
+        assert pyramid is not None, \
+            "Timed out waiting for pyramid file"
+
         self.args += ["--endian=big"]
         self.cli.invoke(self.args, strict=True)
+
         out, err = capsys.readouterr()
-        output_start = "Pyramid removed for image %s" % img_id
-        assert output_start in out
+
+        assert f"Pyramid removed for image {img_id}" in out
 
     def test_remove_pyramids(self, tmpdir, capsys):
         """Test removepyramids with litlle endian true"""
