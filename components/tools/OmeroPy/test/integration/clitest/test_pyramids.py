@@ -139,6 +139,24 @@ class TestRemovePyramidsFullAdmin(CLITest):
             orig_source.close()
             new_sink.close()
 
+    def wait_for_pyramid_file(self, pixels_id, timeout=120):
+        pixels_dir = (
+            "/home/omero/workspace/"
+            "OMERO-test-integration/data/Pixels"
+        )
+        expected = f"{pixels_id}_pyramid"
+
+        deadline = time.time() + timeout
+        while time.time() < deadline:
+            for root, _, files in os.walk(pixels_dir):
+                if expected in files:
+                    return
+            time.sleep(1)
+
+        pytest.fail(
+            f"Timed out waiting for pyramid file {expected}"
+        )
+
     def test_remove_pyramids_little_endian(self, tmpdir, capsys):
         """Test removepyramids with little endian true"""
         img_id = self.import_pyramid(tmpdir)
@@ -151,22 +169,8 @@ class TestRemovePyramidsFullAdmin(CLITest):
         ))
         pixels_id = rows[0][0]
 
-        # Wait until the pyramid file actually exists on disk
-        pixels_dir = "/home/omero/workspace/OMERO-test-integration/data/Pixels"
-        expected = f"{pixels_id}_pyramid"
-        deadline = time.time() + 120
-
-        while time.time() < deadline:
-            found = False
-            for root, _, files in os.walk(pixels_dir):
-                if expected in files:
-                    found = True
-                    break
-            if found:
-                break
-            time.sleep(1)
-        else:
-            pytest.fail(f"Timed out waiting for pyramid file {expected}")
+        # Wait until the pyramid actuall exists on disk
+        self.wait_for_pyramid_file(pixels_id)
 
         self.args += ["--endian=little"]
         self.cli.invoke(self.args, strict=True)
@@ -246,24 +250,8 @@ class TestRemovePyramidsFullAdmin(CLITest):
         )
 
         pixels_id = next(iter(image.copyPixels())).id.val
-
-        pyramid = None
-        pixels_dir = "/home/omero/workspace/OMERO-test-integration/data/Pixels"
-        pyramid_name = f"{pixels_id}_pyramid"
-
-        for _ in range(60):
-            for root, _, files in os.walk(pixels_dir):
-                if pyramid_name in files:
-                    pyramid = os.path.join(root, pyramid_name)
-                    break
-
-            if pyramid:
-                break
-
-            time.sleep(1)
-
-        assert pyramid is not None, \
-            "Timed out waiting for pyramid file"
+        # Wait for pyramid to actually be on disk
+        self.wait_for_pyramid_file(pixels_id)
 
         self.args += ["--endian=big"]
         self.cli.invoke(self.args, strict=True)
@@ -276,8 +264,26 @@ class TestRemovePyramidsFullAdmin(CLITest):
         """Test removepyramids with litlle endian true"""
         name = "big&sizeX=3500&sizeY=3500&little=false.fake"
         big_id = self.import_pyramid(tmpdir, name=name, skip=None)
+        query_service = self.client.sf.getQueryService()
+
+        rows = unwrap(query_service.projection(
+            "select p.id from Image i join i.pixels p where i.id = :id",
+            ParametersI().addId(big_id)
+        ))
+        pixels_id = rows[0][0]
+
+        self.wait_for_pyramid_file(pixels_id)
         name = "little&sizeX=3500&sizeY=3500&little=true.fake"
         little_id = self.import_pyramid(tmpdir, name=name, skip=None)
+        query_service = self.client.sf.getQueryService()
+
+        rows = unwrap(query_service.projection(
+            "select p.id from Image i join i.pixels p where i.id = :id",
+            ParametersI().addId(little_id)
+        ))
+        pixels_id = rows[0][0]
+
+        self.wait_for_pyramid_file(pixels_id)
         self.cli.invoke(self.args, strict=True)
         out, err = capsys.readouterr()
         output_start = "Pyramid removed for image %s" % big_id
