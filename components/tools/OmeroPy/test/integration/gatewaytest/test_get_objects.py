@@ -716,8 +716,9 @@ class TestGetObject (ITest):
         assert len(list(annGen)) == 0
 
         # get ALL annotations
+        # NB: this can include 'user' group annotations from other tests
         anns = list(conn.getObjects("Annotation"))
-        assert len(anns) == 9
+        assert len(anns) >= 9
 
         # We only want Tags on the two Datasets
         annGen = conn.getObjects("Annotation",
