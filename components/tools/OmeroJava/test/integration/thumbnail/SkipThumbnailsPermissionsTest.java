@@ -24,12 +24,9 @@ import ome.formats.importer.ImportConfig;
 import omero.ServerError;
 import omero.api.RenderingEnginePrx;
 import omero.api.ThumbnailStorePrx;
-import omero.model.EventI;
-import omero.model.EventLogI;
 import omero.model.ExperimenterGroup;
 import omero.model.ExperimenterGroupI;
 import omero.model.Pixels;
-import omero.model.StatsInfo;
 import omero.sys.EventContext;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
@@ -54,16 +51,6 @@ import java.util.List;
 @SuppressWarnings("Duplicates")
 public class SkipThumbnailsPermissionsTest extends AbstractServerImportTest {
 
-    /* Total wait time will be WAITS * INTERVAL milliseconds */
-    /**
-     * Maximum number of intervals to wait for pyramid
-     **/
-    private static final int WAITS = 500;
-
-    /**
-     * Wait time in milliseconds
-     **/
-    private static final long INTERVAL = 1000L;
 
     /**
      * The collection of files that have to be deleted.
@@ -200,8 +187,7 @@ public class SkipThumbnailsPermissionsTest extends AbstractServerImportTest {
 
     /**
      * Test:
-     * 1. User1 import an image (pyramid will be created) and skip the thumbnail
-     * generation during import.
+     * 1. User1 import a pyramidal image and skip the thumbnail generation during import.
      * 2. User1 does generate a thumbnail
      * 3. Create a new user: user2 and log as that user
      * 4. User2 create a thumbnail for that image using the <code>getThumbnail</code>
@@ -225,7 +211,7 @@ public class SkipThumbnailsPermissionsTest extends AbstractServerImportTest {
         ImportConfig config = new ImportConfig();
         config.doThumbnails.set(false); // skip thumbnails
 
-        // Create a fake file. A pyramid will be generated
+        // Import a pyramidal file
         Pixels pixels = importLargeFile(config);
 
         // View image as user 1
@@ -253,8 +239,7 @@ public class SkipThumbnailsPermissionsTest extends AbstractServerImportTest {
 
     /**
      * Test:
-     * 1. User1 import an image (pyramid will be created) and skip the thumbnail
-     * generation during import.
+     * 1. User1 import a pyramidal image and skip the thumbnail generation during import.
      * 2. User1 does not generate a thumbnail
      * 3. Create a new user: user2 and log as that user
      * 4. User2 create a thumbnail for that image using the {@code getThumbnail}
@@ -282,7 +267,7 @@ public class SkipThumbnailsPermissionsTest extends AbstractServerImportTest {
         ImportConfig config = new ImportConfig();
         config.doThumbnails.set(false); // skip thumbnails
 
-        // Create a fake file. A pyramid will be generated
+        // Import a pyramidal file
         Pixels pixels = importLargeFile(config);
 
         // Create new user in group and login as that user
@@ -301,8 +286,7 @@ public class SkipThumbnailsPermissionsTest extends AbstractServerImportTest {
 
     /**
      * Test:
-     * 1. User1 import an image (pyramid will be created) and skip the thumbnail
-     * generation during import.
+     * 1. User1 import a pyramidal image and skip the thumbnail generation during import.
      * 2. User1 generates a thumbnail
      * 3. Create a new user: user2 and log as that user
      * 4. User2 create a thumbnail for that image using the {@code getThumbnailWithoutDefault}
@@ -326,7 +310,7 @@ public class SkipThumbnailsPermissionsTest extends AbstractServerImportTest {
         ImportConfig config = new ImportConfig();
         config.doThumbnails.set(false); // skip thumbnails
 
-        // Create a fake file. A pyramid will be generated
+        // Import a pyramidal file
         Pixels pixels = importLargeFile(config);
 
         // View image as user 1
@@ -354,8 +338,7 @@ public class SkipThumbnailsPermissionsTest extends AbstractServerImportTest {
 
     /**
      * Test:
-     * 1. User1 import an image (pyramid will be created) and skip the thumbnail
-     * generation during import.
+     * 1. User1 import a pyramidal image and skip the thumbnail generation during import.
      * 2. User1 does not generate a thumbnail
      * 3. Create a new user: user2 and log as that user
      * 4. User2 create a thumbnail for that image using the {@code getThumbnailWithoutDefault}
@@ -383,7 +366,7 @@ public class SkipThumbnailsPermissionsTest extends AbstractServerImportTest {
         ImportConfig config = new ImportConfig();
         config.doThumbnails.set(false); // skip thumbnails
 
-        // Create a fake file. A pyramid will be generated
+        // Import a pyramidal file
         Pixels pixels = importLargeFile(config);
 
         // Create new user in group and login as that user
@@ -425,7 +408,7 @@ public class SkipThumbnailsPermissionsTest extends AbstractServerImportTest {
         ImportConfig config = new ImportConfig();
         config.doThumbnails.set(false); // skip thumbnails
 
-        // Create a fake file. A pyramid will be generated
+        // Import a pyramidal file
         Pixels pixels = importLargeFile(config);
         final long pixelsId = pixels.getId().getValue();
         RenderingEnginePrx re = factory.createRenderingEngine();
@@ -541,7 +524,7 @@ public class SkipThumbnailsPermissionsTest extends AbstractServerImportTest {
         ImportConfig config = new ImportConfig();
         config.doThumbnails.set(false); // skip thumbnails
 
-        // Create a fake file. A pyramid will be generated
+        // Import a pyramidal file
         Pixels pixels = importLargeFile(config);
         final long pixelsId = pixels.getId().getValue();
         RenderingEnginePrx re = factory.createRenderingEngine();
@@ -681,16 +664,16 @@ public class SkipThumbnailsPermissionsTest extends AbstractServerImportTest {
     }
 
     /**
-     * Creates a large fake image. A pyramid will be generated.
+     * Import a pyramidal 3.5K x 3.5K image.
      *
      * @param config omero import config
      * @return
      * @throws Throwable
      */
     private Pixels importLargeFile(ImportConfig config) throws Throwable {
-        File f = File.createTempFile("bigImageFake&sizeX=3500&sizeY=3500&little=false", ".fake");
+        File f = File.createTempFile("bigImageFake&sizeX=3500&sizeY=3500&little=false&resolutions=3", ".fake");
         f.deleteOnExit();
-        return importAndWaitForPyramid(config, f, "fake");
+        return importFile(config, f, "fake").get(0);
     }
 
     /**
@@ -704,59 +687,5 @@ public class SkipThumbnailsPermissionsTest extends AbstractServerImportTest {
         File f = File.createTempFile("imageFake", "."+ extension);
         f.deleteOnExit();
         return f;
-    }
-
-    private void triggerPyramidGeneration(long pixelsId) throws ServerError {
-        // This strange out of place event log is required for triggering
-        // generation of pyramids for imported file.
-        EventLogI el = new EventLogI();
-        el.setAction(omero.rtypes.rstring("PIXELDATA"));
-        el.setEntityId(omero.rtypes.rlong(pixelsId));
-        el.setEntityType(omero.rtypes.rstring(ome.model.core.Pixels.class.getName()));
-        el.setEvent(new EventI(0, false));
-
-        // Need to use root session to save eventlog otherwise you get a
-        // security violation
-        root.getSession().getUpdateService().saveObject(el);
-    }
-
-    /**
-     * Import an image file of the given format then wait for a pyramid file to
-     * be generated by checking if stats exists.
-     *
-     * @param config omero import config
-     * @param file file to import
-     * @param format file format / extension
-     * @return pixels object
-     * @throws Exception
-     */
-    private Pixels importAndWaitForPyramid(ImportConfig config, File file, String format)
-            throws Exception {
-        Pixels pixels = null;
-        try {
-            pixels = importFile(config, file, format).get(0);
-        } catch (Throwable e) {
-            Assert.fail("Cannot import image file: " + file.getAbsolutePath()
-                    + " Reason: " + e.toString());
-        }
-        triggerPyramidGeneration(pixels.getId().getValue());
-
-        // Wait for a pyramid to be built (stats will be not null)
-        Pixels p = factory.getPixelsService().retrievePixDescription(pixels.getId().getValue());
-        StatsInfo stats = p.getChannel(0).getStatsInfo();
-        int waits = 0;
-        Assert.assertEquals(stats, null);
-        while (stats == null && waits < WAITS) {
-            Thread.sleep(INTERVAL);
-            waits++;
-            factory.createRawPixelsStore();
-            p = factory.getPixelsService().retrievePixDescription(
-                    pixels.getId().getValue());
-            stats = p.getChannel(0).getStatsInfo();
-        }
-        if (stats == null) {
-            Assert.fail("No pyramid after " + WAITS + " seconds");
-        }
-        return p;
     }
 }
