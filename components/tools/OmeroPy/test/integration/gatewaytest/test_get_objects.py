@@ -647,8 +647,12 @@ class TestGetObject (ITest):
         conn = BlitzGateway(client_obj=client)
         update = conn.getUpdateService()
 
-        ns = "test_get_objects_annotation_comment"
-        ns_tag = "test_get_objects_annotation_tag"
+        ann_types = ["CommentAnnotation", "TagAnnotation",
+                     "LongAnnotation", "XmlAnnotation",
+                     "DoubleAnnotation", "BooleanAnnotation",
+                     "TimestampAnnotation", "TermAnnotation"]
+        ns = "test_get_objects_namespace"
+        ns_map = "test_get_objects_map_namespace"
         ns_file = "test_get_objects_annotation_file"
 
         def create_dataset_with_annotations(name, dtype="Dataset"):
@@ -663,16 +667,27 @@ class TestGetObject (ITest):
                 obj = update.saveAndReturnObject(obj)
                 wrapper = omero.gateway.ProjectWrapper(conn, obj)
 
-            # create Comment
-            ann = omero.gateway.CommentAnnotationWrapper(conn)
-            ann.setNs(ns)
-            ann.setValue("Test Comment: " + name)
-            ann = wrapper.linkAnnotation(ann)
-            # create Tag
-            tag = omero.gateway.TagAnnotationWrapper(conn)
-            tag.setNs(ns_tag)
-            tag.setValue("Test Tag: " + name)
-            wrapper.linkAnnotation(tag)
+            # Create total of 10 annotations on the object...
+            # create Comment, Tag, Xml, etc
+            for ann_type in ann_types:
+                ann = getattr(omero.gateway, ann_type + "Wrapper")(conn)
+                ann.setNs(ns)
+                if ann_type in ("LongAnnotation", "DoubleAnnotation", "TimestampAnnotation"):
+                    ann.setValue(100.0)
+                elif ann_type == "BooleanAnnotation":
+                    ann.setValue(True)
+                else:
+                    ann.setValue("Test %s: %s" % (ann_type, name))
+                wrapper.linkAnnotation(ann)
+
+            # create MapAnnotation
+            mapAnn = omero.gateway.MapAnnotationWrapper(conn)
+            mapAnn.setNs(ns)
+            mapAnn.setValue([("key1", "value1"), ("key2", "value2")])
+            mapAnn.setNs(ns_map)
+            mapAnn.save()
+            wrapper.linkAnnotation(mapAnn)
+
             # create FileAnnotation
             fileAnn = omero.gateway.FileAnnotationWrapper(conn)
             fileObj = omero.model.OriginalFileI()
@@ -697,18 +712,18 @@ class TestGetObject (ITest):
         annGen = conn.getObjects("Annotation",
                                  opts={'parent_type': "dataset",
                                        'parent_ids': [dataset1.id]})
-        assert len(list(annGen)) == 3
+        assert len(list(annGen)) == 10
 
         # get all annotations on two Datasets
         annGen = conn.getObjects("Annotation",
                                  opts={'parent_type': "dataset",
                                        'parent_ids': [dataset1.id,
                                                       dataset2.id]})
-        assert len(list(annGen)) == 6
+        assert len(list(annGen)) == 20
 
         # get all annotations on ALL Datasets
         annGen = conn.getObjects("Annotation", opts={'parent_type': "dataset"})
-        assert len(list(annGen)) == 6
+        assert len(list(annGen)) == 20
 
         # No annotations on PlateAcquisition (none created)
         annGen = conn.getObjects("Annotation",
@@ -718,31 +733,31 @@ class TestGetObject (ITest):
         # get ALL annotations
         # NB: this can include 'user' group annotations from other tests
         anns = list(conn.getObjects("Annotation"))
-        assert len(anns) >= 9
+        assert len(anns) >= 30
 
         # We only want Tags on the two Datasets
-        annGen = conn.getObjects("Annotation",
+        annGen = conn.getObjects("TagAnnotation",
                                  opts={'parent_type': "dataset",
                                        'parent_ids': [dataset1.id,
-                                                      dataset2.id],
-                                       'ann_type': "tag"})
+                                                      dataset2.id]})
         assert len(list(annGen)) == 2
 
         # ALL Tags
-        annGen = conn.getObjects("Annotation", opts={'ann_type': "tag"})
+        annGen = conn.getObjects("TagAnnotation")
         assert len(list(annGen)) == 3
 
         # filter by namespace
         annGen = conn.getObjects("Annotation", opts={'ns': ns})
-        assert len(list(annGen)) == 3
+        assert len(list(annGen)) == 24
 
         # filter by namespace and type
-        annGen = conn.getObjects("Annotation",
-                                 opts={'ns': ns, 'ann_type': "comment"})
-        assert len(list(annGen)) == 3
-        annGen = conn.getObjects("Annotation",
-                                 opts={'ns': ns, 'ann_type': "tag"})
-        assert len(list(annGen)) == 0
+        for ann_type in ann_types:
+            annGen = conn.getObjects(ann_type,
+                                    opts={'ns': ns})
+            assert len(list(annGen)) == 3
+            annGen = conn.getObjects(ann_type,
+                                    opts={'ns': ns_map})
+            assert len(list(annGen)) == 0
 
         # test File Annotation is loaded
         annGen = conn.getObjects("Annotation",
