@@ -708,6 +708,17 @@ class TestGetObject (ITest):
         dataset2 = create_dataset_with_annotations("Dataset 2")
         create_dataset_with_annotations("Project 1", dtype="Project")
 
+        # Add Tag to Group
+        groupId = conn.getEventContext().groupId
+        tag = omero.gateway.TagAnnotationWrapper(conn)
+        tag.setNs("test_get_objects_group_tag")
+        tag.setValue("Test Tag on Group")
+        tag.save()
+        link = omero.model.ExperimenterGroupAnnotationLinkI()
+        link.child = omero.model.TagAnnotationI(tag.id, False)
+        link.parent = omero.model.ExperimenterGroupI(groupId, False)
+        conn.getUpdateService().saveAndReturnObject(link)
+
         # get all annotations on one Dataset
         annGen = conn.getObjects("Annotation",
                                  opts={'parent_type': "Dataset",
@@ -720,6 +731,9 @@ class TestGetObject (ITest):
                                        'parent_ids': [dataset1.id,
                                                       dataset2.id]})
         assert len(list(annGen)) == 20
+        annGen = conn.getObjects("Annotation",
+                                 opts={'parent_type': "experimentergroup"})
+        assert len(list(annGen)) == 1
 
         # get all annotations on ALL Datasets
         annGen = conn.getObjects("Annotation", opts={'parent_type': "dataset"})
@@ -733,7 +747,7 @@ class TestGetObject (ITest):
         # get ALL annotations
         # NB: this can include 'user' group annotations from other tests
         anns = list(conn.getObjects("Annotation"))
-        assert len(anns) >= 30
+        assert len(anns) >= 31
 
         # We only want Tags on the two Datasets
         annGen = conn.getObjects("TagAnnotation",
@@ -744,7 +758,7 @@ class TestGetObject (ITest):
 
         # ALL Tags
         annGen = conn.getObjects("TagAnnotation")
-        assert len(list(annGen)) == 3
+        assert len(list(annGen)) == 4
 
         # filter by namespace
         annGen = conn.getObjects("Annotation", opts={'ns': ns})
