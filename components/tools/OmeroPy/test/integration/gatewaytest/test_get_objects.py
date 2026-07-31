@@ -710,11 +710,11 @@ class TestGetObject (ITest):
 
         # get all annotations on one Dataset
         annGen = conn.getObjects("Annotation",
-                                 opts={'parent_type': "dataset",
+                                 opts={'parent_type': "Dataset",
                                        'parent_ids': [dataset1.id]})
         assert len(list(annGen)) == 10
 
-        # get all annotations on two Datasets
+        # annotations on two Datasets - parent_type is case-insensitive
         annGen = conn.getObjects("Annotation",
                                  opts={'parent_type': "dataset",
                                        'parent_ids': [dataset1.id,
