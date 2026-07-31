@@ -165,6 +165,10 @@ class TestAnnotations(IWebTest):
         # We only want Tags on the Dataset
         rsp = get_json(client, annotations_url, {"dataset": dataset1.id, "type": "tag"})
         assert len(rsp["data"]) == 1
+        # alternative URL for TagAnnotations
+        tagannotations_url = reverse("api_namedannotations", kwargs={"api_version": version, "ann_type": "tag"})
+        rsp = get_json(client, tagannotations_url, {"dataset": dataset1.id})
+        assert len(rsp["data"]) == 1
 
         # filter by namespace
         rsp = get_json(client, annotations_url, {"ns": self.ns})
