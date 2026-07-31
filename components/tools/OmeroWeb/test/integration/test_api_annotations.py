@@ -19,21 +19,18 @@
 
 """Tests querying of Annotations with json api."""
 
-from omeroweb.testlib import IWebTest, get_json, delete_json
+from omeroweb.testlib import IWebTest, get_json
 from django.urls import reverse
 from omeroweb.api import api_settings
 import pytest
-from test_api_projects import get_update_service, \
-    get_connection
-from test_api_images import assert_objects
-from omero.model import ProjectI, \
-    DatasetI, \
-    RoiI
-from omero.gateway import BlitzGateway, DatasetWrapper, ProjectWrapper, CommentAnnotationWrapper, TagAnnotationWrapper
-
-from omero.model.enums import UnitsLength
-from omero.rtypes import rstring, rint, rdouble
-from omero import ValidationException
+import omero
+from omero.model import ProjectI, DatasetI, \
+    TagAnnotationI, ExperimenterGroupAnnotationLinkI, ExperimenterGroupI, \
+    OriginalFileI
+from omero.gateway import BlitzGateway, TagAnnotationWrapper, \
+    FileAnnotationWrapper, OriginalFileWrapper, \
+    DatasetWrapper, ProjectWrapper
+from omero.rtypes import wrap
 
 
 def build_url(client, url_name, url_kwargs):
@@ -42,7 +39,7 @@ def build_url(client, url_name, url_kwargs):
     # http://testserver/webclient/
     webclient_url = response.url
     url = reverse(url_name, kwargs=url_kwargs)
-    url = webclient_url.replace('/webclient/', url)
+    url = webclient_url.replace("/webclient/", url)
     return url
 
 
@@ -50,68 +47,138 @@ class TestAnnotations(IWebTest):
     """Tests querying Annotations."""
 
     ns = "test_get_objects_annotation_comment"
-    ns_tag = "test_get_objects_annotation_tag"
+    ns_map = "test_get_objects_map_namespace"
+    ns_file = "test_get_objects_annotation_file"
+    ann_types = ["CommentAnnotation", "TagAnnotation",
+                 "LongAnnotation", "XmlAnnotation",
+                 "DoubleAnnotation", "BooleanAnnotation",
+                 "TimestampAnnotation", "TermAnnotation"]
 
     @pytest.fixture()
     def user1(self):
         """Return a new user in a read-annotate group."""
-        group = self.new_group(perms='rwra--')
+        group = self.new_group(perms="rwra--")
         user = self.new_client_and_user(group=group)
         return user
 
     @pytest.fixture()
     def dataset_anns(self, user1):
         """Create a bunch of Annotations."""
-        conn = get_connection(user1)
-        update = get_update_service(user1)
+        conn = BlitzGateway(client_obj=user1[0])
+        update = conn.getUpdateService()
 
         def create_dataset_with_annotations(name, dtype="Dataset"):
             if dtype == "Dataset":
                 obj = DatasetI()
-                obj.name = rstring(name)
+                obj.name = wrap(name)
                 obj = update.saveAndReturnObject(obj)
                 wrapper = DatasetWrapper(conn, obj)
             elif dtype == "Project":
                 obj = ProjectI()
-                obj.name = rstring(name)
+                obj.name = wrap(name)
                 obj = update.saveAndReturnObject(obj)
                 wrapper = ProjectWrapper(conn, obj)
 
-            # create Comment
-            ann = CommentAnnotationWrapper(conn)
-            ann.setNs(self.ns)
-            ann.setValue("Test Comment: " + name)
-            ann = wrapper.linkAnnotation(ann)
-            # create Tag
-            tag = TagAnnotationWrapper(conn)
-            tag.setNs(self.ns_tag)
-            tag.setValue("Test Tag: " + name)
-            wrapper.linkAnnotation(tag)
+            # Create total of 10 annotations on the object...
+            # create Comment, Tag, Xml, etc
+            for ann_type in self.ann_types:
+                ann = getattr(omero.gateway, ann_type + "Wrapper")(conn)
+                ann.setNs(self.ns)
+                if ann_type in ("LongAnnotation", "DoubleAnnotation", "TimestampAnnotation"):
+                    ann.setValue(100.0)
+                elif ann_type == "BooleanAnnotation":
+                    ann.setValue(True)
+                else:
+                    ann.setValue("Test %s: %s" % (ann_type, name))
+                wrapper.linkAnnotation(ann)
+
+            # create MapAnnotation
+            mapAnn = omero.gateway.MapAnnotationWrapper(conn)
+            mapAnn.setValue([("key1", "value1"), ("key2", "value2")])
+            mapAnn.setNs(self.ns_map)
+            mapAnn.save()
+            wrapper.linkAnnotation(mapAnn)
+
+            # create FileAnnotation
+            fileAnn = FileAnnotationWrapper(conn)
+            fileObj = OriginalFileI()
+            fileObj = OriginalFileWrapper(conn, fileObj)
+            fileObj.setName(wrap("fileName"))
+            fileObj.setPath(wrap("path/to/file"))
+            fileObj.setHash(wrap("a"))
+            fileObj.setSize(omero.rtypes.rlong(0))
+            fileObj.save()
+            fileAnn.setFile(fileObj)
+            fileAnn.setNs(self.ns_file)
+            fileAnn.save()
+            wrapper.linkAnnotation(fileAnn)
 
             return wrapper
 
         dataset1 = create_dataset_with_annotations("Dataset 1")
         dataset2 = create_dataset_with_annotations("Dataset 2")
         project1 = create_dataset_with_annotations("Project 1", dtype="Project")
+
+        # Also add Tag to the Group
+        groupId = conn.getEventContext().groupId
+        tag = TagAnnotationWrapper(conn)
+        tag.setNs("test_get_objects_group_tag")
+        tag.setValue("Test Tag on Group")
+        tag.save()
+        link = ExperimenterGroupAnnotationLinkI()
+        link.child = TagAnnotationI(tag.id, False)
+        link.parent = ExperimenterGroupI(groupId, False)
+        conn.getUpdateService().saveAndReturnObject(link)
+
         return dataset1, dataset2, project1
 
 
     def test_dataset_anns(self, user1, dataset_anns):
         """Test querying Annotations on Datasets and Projects."""
         dataset1, dataset2, project1 = dataset_anns
-        conn = get_connection(user1)
+        conn = BlitzGateway(client_obj=user1[0])
         user_name = conn.getUser().getName()
         client = self.new_django_client(user_name, user_name)
         version = api_settings.API_VERSIONS[-1]
 
-        # List ALL annotations
-        annotations_url = reverse('api_annotations', kwargs={'api_version': version})
-        rsp = get_json(client, annotations_url)
-        # assert_objects(conn, rsp['data'], [], dtype="Roi",
-        #                opts={'load_shapes': True})
-        assert len(rsp['data']) == 6
+        # Tests below simply check the NUMBER of Annotations returned,
+        # not the content of the Annotations themselves.
 
-        rsp = get_json(client, annotations_url, {'dataset': dataset1.id})
-        # assert_objects(conn, rsp['data'], [], dtype="Roi",
-        #                opts={'load_shapes': True})
-        assert len(rsp['data']) == 2
+        # List ALL annotations
+        annotations_url = reverse("api_annotations", kwargs={"api_version": version})
+        rsp = get_json(client, annotations_url)
+        assert len(rsp["data"]) >= 31
+
+        # get all annotations on one Dataset
+        rsp = get_json(client, annotations_url, {"dataset": dataset1.id})
+        assert len(rsp["data"]) == 10
+
+        # annotation on group
+        group_id = conn.getEventContext().groupId
+        rsp = get_json(client, annotations_url, {"experimentergroup": group_id})
+        assert len(rsp["data"]) == 1
+
+        # No annotations on PlateAcquisition (none created)
+        rsp = get_json(client, annotations_url, {"plateacquisition": 1})
+        assert len(rsp["data"]) == 0
+
+        # We only want Tags on the Dataset
+        rsp = get_json(client, annotations_url, {"dataset": dataset1.id, "type": "tag"})
+        assert len(rsp["data"]) == 1
+
+        # filter by namespace
+        rsp = get_json(client, annotations_url, {"ns": self.ns})
+        assert len(rsp["data"]) == 24
+
+        # filter by namespace and type
+        for ann_type in self.ann_types:
+            short_type = ann_type.replace("Annotation", "").lower()
+            rsp = get_json(client, annotations_url, {"type": short_type, "ns": self.ns})
+            assert len(rsp["data"]) == 3
+            rsp = get_json(client, annotations_url, {"type": short_type, "ns": self.ns_map})
+            assert len(rsp["data"]) == 0
+
+        # test File Annotation is loaded
+        rsp = get_json(client, annotations_url, {"dataset": dataset1.id, "type": "file"})
+        assert len(rsp["data"]) == 1
+        assert rsp["data"][0]["File"]["path"] == "path/to/file"
