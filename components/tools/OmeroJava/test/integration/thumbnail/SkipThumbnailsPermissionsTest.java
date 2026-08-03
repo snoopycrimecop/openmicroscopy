@@ -659,9 +659,9 @@ public class SkipThumbnailsPermissionsTest extends AbstractServerImportTest {
      * @throws Throwable
      */
     private Pixels importFile(ImportConfig config) throws Throwable {
-        File file = File.createTempFile("imageFake", ".fake");
+        File f = File.createTempFile("imageFake", ".fake");
         f.deleteOnExit();
-        return importFile(config, file, "fake").get(0);
+        return importFile(config, f, "fake").get(0);
     }
 
     /**
