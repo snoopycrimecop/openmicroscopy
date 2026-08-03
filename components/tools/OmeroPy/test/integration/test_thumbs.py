@@ -10,6 +10,7 @@
 """
 
 from omero.testlib import ITest
+import os
 import pytest
 
 from omero import MissingPyramidException
