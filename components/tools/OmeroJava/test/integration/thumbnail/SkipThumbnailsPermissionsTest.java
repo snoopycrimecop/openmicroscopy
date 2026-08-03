@@ -652,14 +652,15 @@ public class SkipThumbnailsPermissionsTest extends AbstractServerImportTest {
     }
 
     /**
-     * Creates a 512x512 fake image.
+     * Import a 512x512 fake image.
      *
      * @param config omero import config
      * @return
      * @throws Throwable
      */
     private Pixels importFile(ImportConfig config) throws Throwable {
-        File file = createImageFile("fake");
+        File file = File.createTempFile("imageFake", ".fake");
+        f.deleteOnExit();
         return importFile(config, file, "fake").get(0);
     }
 
@@ -671,21 +672,8 @@ public class SkipThumbnailsPermissionsTest extends AbstractServerImportTest {
      * @throws Throwable
      */
     private Pixels importLargeFile(ImportConfig config) throws Throwable {
-        File f = File.createTempFile("bigImageFake&sizeX=3500&sizeY=3500&little=false&resolutions=3", ".fake");
+        File f = File.createTempFile("bigImageFake", "&sizeX=3500&sizeY=3500&resolutions=3.fake");
         f.deleteOnExit();
         return importFile(config, f, "fake").get(0);
-    }
-
-    /**
-     * Creates a 512x512 fake image.
-     *
-     * @param extension
-     * @return
-     * @throws Throwable
-     */
-    private File createImageFile(String extension) throws Throwable {
-        File f = File.createTempFile("imageFake", "."+ extension);
-        f.deleteOnExit();
-        return f;
     }
 }
