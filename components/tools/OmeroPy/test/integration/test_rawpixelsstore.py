@@ -84,6 +84,11 @@ class TestRPS(ITest):
 
     def testRomioToPyramid(self, tmpdir):
         """
+        This test checks automatic pyramid generation
+        and successful recovery from MissingPyramidException.
+        It cannot really work without omero-generated
+        pyramids.
+
         Here we create a pixels that is not big,
         then modify its metadata so that it IS big,
         in order to trick the service into throwing
@@ -119,6 +124,11 @@ class TestRPS(ITest):
 
     def test2RomioToPyramidWithNegOne(self, tmpdir):
         """
+        This test is basically a repeat of testRomioToPyramid
+        test above under cross-group context.
+        The test cannot really work without omero-generated
+        pyramids.
+
         Here we try the above but pass omero.group:-1
         to see if we can cause an exception.
         """
@@ -154,6 +164,11 @@ class TestRPS(ITest):
 
     def testPyramidConcurrentAccess(self, tmpdir):
         """
+        The test checks thread-safety and concurrent access
+        to a newly generated pyramid.
+        The test cannot really work without omero-generated
+        pyramids.
+
         See ticket:11709
         """
         all_context = {"omero.group": "-1"}
