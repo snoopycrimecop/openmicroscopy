@@ -10,7 +10,10 @@
 """
 
 import omero
+import os
+import pytest
 import threading
+
 from omero.testlib import ITest
 from omero.util.tiles import TileLoopIteration
 from omero.util.tiles import RPSTileLoop
