@@ -82,6 +82,13 @@ class TestRPS(ITest):
             rps.close()
         self.check_pix(pix)
 
+    @pytest.mark.skipif(
+        "JENKINS_MASTER" in os.environ,
+        reason=(
+            "Disabled on Jenkins: requires the PixelData service "
+            "to provide OMERO-managed pyramids."
+        ),
+    )
     def testRomioToPyramid(self, tmpdir):
         """
         This test checks automatic pyramid generation
@@ -122,6 +129,13 @@ class TestRPS(ITest):
         finally:
             rps.close()
 
+    @pytest.mark.skipif(
+        "JENKINS_MASTER" in os.environ,
+        reason=(
+            "Disabled on Jenkins: requires the PixelData service "
+            "to provide OMERO-managed pyramids."
+        ),
+    )
     def test2RomioToPyramidWithNegOne(self, tmpdir):
         """
         This test is basically a repeat of testRomioToPyramid
@@ -162,6 +176,13 @@ class TestRPS(ITest):
         finally:
             rps.close()
 
+    @pytest.mark.skipif(
+        "JENKINS_MASTER" in os.environ,
+        reason=(
+            "Disabled on Jenkins: requires the PixelData service "
+            "to provide OMERO-managed pyramids."
+        ),
+    )
     def testPyramidConcurrentAccess(self, tmpdir):
         """
         The test checks thread-safety and concurrent access
