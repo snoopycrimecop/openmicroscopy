@@ -454,11 +454,21 @@ class TestRenderImageRegion(IWebTest):
 
     def test_render_image_region_tile_params_big_image(self, tmpdir):
         """
+        This test was originally relying on generated
+        omero pyramids. This is now changed
+        to use a fake file with pyramids included.
+
         Tests the retrieval of pyramid image at different
         resolution. Resolution changes is supported in that case.
         """
-        image_id = self.import_pyramid(tmpdir, client=self.client)
-
+        # Import a fake image with an existing pyramid
+        images = self.import_fake_file(
+            client=self.client,
+            sizeX=4000,
+            sizeY=4000,
+            resolutions=5,
+        )
+        image_id = images[0].id.val
         request_url = reverse(
             'webgateway_render_image_region',
             kwargs={'iid': str(image_id), 'z': '0', 't': '0'}
