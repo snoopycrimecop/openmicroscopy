@@ -10,7 +10,10 @@
 """
 
 import omero
+import os
+import pytest
 import threading
+
 from omero.testlib import ITest
 from omero.util.tiles import TileLoopIteration
 from omero.util.tiles import RPSTileLoop
@@ -82,8 +85,20 @@ class TestRPS(ITest):
             rps.close()
         self.check_pix(pix)
 
+    @pytest.mark.skipif(
+        "JENKINS_MASTER" in os.environ,
+        reason=(
+            "Disabled on Jenkins: requires the PixelData service "
+            "to provide OMERO-managed pyramids."
+        ),
+    )
     def testRomioToPyramid(self, tmpdir):
         """
+        This test checks automatic pyramid generation
+        and successful recovery from MissingPyramidException.
+        It cannot really work without omero-generated
+        pyramids.
+
         Here we create a pixels that is not big,
         then modify its metadata so that it IS big,
         in order to trick the service into throwing
@@ -117,8 +132,20 @@ class TestRPS(ITest):
         finally:
             rps.close()
 
+    @pytest.mark.skipif(
+        "JENKINS_MASTER" in os.environ,
+        reason=(
+            "Disabled on Jenkins: requires the PixelData service "
+            "to provide OMERO-managed pyramids."
+        ),
+    )
     def test2RomioToPyramidWithNegOne(self, tmpdir):
         """
+        This test is basically a repeat of testRomioToPyramid
+        test above under cross-group context.
+        The test cannot really work without omero-generated
+        pyramids.
+
         Here we try the above but pass omero.group:-1
         to see if we can cause an exception.
         """
@@ -152,8 +179,20 @@ class TestRPS(ITest):
         finally:
             rps.close()
 
+    @pytest.mark.skipif(
+        "JENKINS_MASTER" in os.environ,
+        reason=(
+            "Disabled on Jenkins: requires the PixelData service "
+            "to provide OMERO-managed pyramids."
+        ),
+    )
     def testPyramidConcurrentAccess(self, tmpdir):
         """
+        The test checks thread-safety and concurrent access
+        to a newly generated pyramid.
+        The test cannot really work without omero-generated
+        pyramids.
+
         See ticket:11709
         """
         all_context = {"omero.group": "-1"}
