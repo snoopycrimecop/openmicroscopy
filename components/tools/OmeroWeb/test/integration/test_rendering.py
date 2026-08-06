@@ -511,6 +511,17 @@ class TestRenderImageRegion(IWebTest):
             # Unlike the original test, do not compare tile contents.
             # Imported pyramid levels may legitimately contain identical data.
 
+            # Request a tile from a non-existent pyramid resolution level.
+            # Need to pass the status_code as 400, otherwise the get() helper
+            # defaults to 200 and crashes.
+            response = get(
+                django_client,
+                request_url,
+                {'tile': '5,0,0,512,512'},
+                status_code=400
+            )
+            assert response.status_code == 400
+
         finally:
             self.assert_no_leaked_rendering_engines()
 
