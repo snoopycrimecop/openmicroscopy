@@ -611,26 +611,35 @@ class TestRenderImageRegion(IWebTest):
 
     def test_render_image_region_big_image_resolution(self, tmpdir):
         """
-        Tests the retrieval of pyramid image at different
-        resolution. Resolution changes is supported in that case.
+        Verify that requests for an out-of-range pyramid resolution level
+        are rejected.
+
+        The test uses an image file which already contains an image pyramid.
+        It does not rely on OMERO PixelData pyramid generation.
         """
-        image_id = self.import_pyramid(tmpdir, client=self.client)
-        conn = omero.gateway.BlitzGateway(client_obj=self.client)
-        image = conn.getObject("Image", image_id)
-        image._prepareRenderingEngine()
-        levels = image._re.getResolutionLevels()
-        image._re.close()
+        images = self.import_fake_file(
+            client=self.client,
+            sizeX=4000,
+            sizeY=4000,
+            resolutions=5,
+        )
+        image_id = images[0].id.val
 
         request_url = reverse(
             'webgateway_render_image_region',
             kwargs={'iid': str(image_id), 'z': '0', 't': '0'}
         )
+
         django_client = self.new_django_client_from_session_id(
             self.client.getSessionId()
         )
-        data = {}
+
         try:
-            data['tile'] = '%s,0,0,512,512' % levels
-            get(django_client, request_url, data, status_code=400)
+            get(
+                django_client,
+                request_url,
+                {'tile': '5,0,0,512,512'},
+                status_code=400
+            )
         finally:
             self.assert_no_leaked_rendering_engines()
