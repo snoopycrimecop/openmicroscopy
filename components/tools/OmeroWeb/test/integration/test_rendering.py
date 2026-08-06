@@ -527,11 +527,22 @@ class TestRenderImageRegion(IWebTest):
 
     def test_render_image_region_region_params(self):
         """
-        Tests the retrieval of the image using the region parameter
+        Tests retrieval of image regions from an image containing an image
+        pyramid.
+
+        The test uses an image file which already contains an image pyramid.
+        It does not rely on OMERO PixelData pyramid generation.
         """
-        image = self.import_fake_file(name='fake')[0]
+
+        images = self.import_fake_file(
+            client=self.client,
+            sizeX=4000,
+            sizeY=4000,
+            resolutions=5,
+        )
+        image_id = images[0].id.val
         conn = omero.gateway.BlitzGateway(client_obj=self.client)
-        image = conn.getObject("Image", image.id.val)
+        image = conn.getObject("Image", image_id)
         image._prepareRenderingEngine()
         image._re.close()
 
