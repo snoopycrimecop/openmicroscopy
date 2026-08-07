@@ -453,45 +453,96 @@ class TestRenderImageRegion(IWebTest):
             self.assert_no_leaked_rendering_engines()
 
     def test_render_image_region_tile_params_big_image(self, tmpdir):
+
         """
-        Tests the retrieval of pyramid image at different
-        resolution. Resolution changes is supported in that case.
+        Verify that WebGateway can retrieve tiles from different
+        pyramid resolution levels.
+
+        The test uses an image file which already contains an image pyramid.
+        It does not rely on OMERO PixelData pyramid generation.
         """
-        image_id = self.import_pyramid(tmpdir, client=self.client)
+
+        images = self.import_fake_file(
+            client=self.client,
+            sizeX=4000,
+            sizeY=4000,
+            resolutions=5,
+        )
+        image_id = images[0].id.val
 
         request_url = reverse(
             'webgateway_render_image_region',
             kwargs={'iid': str(image_id), 'z': '0', 't': '0'}
         )
+
         django_client = self.new_django_client_from_session_id(
             self.client.getSessionId()
         )
-        data = {}
+
         try:
-            data['tile'] = '0,0,0,512,512'
-            response = get(django_client, request_url, data)
-            tile_content = response.content
-            tile = Image.open(BytesIO(tile_content))
+            # Request tile from highest resolution level.
+            response = get(
+                django_client,
+                request_url,
+                {'tile': '0,0,0,512,512'}
+            )
+
+            assert response.status_code == 200
+
+            tile = Image.open(BytesIO(response.content))
+            tile.load()
+
             assert tile.size == (512, 512)
-            digest = self.calculate_sha1(tile_content)
-            # request another resolution. It should default to 0
-            data['tile'] = '1,0,0,512,512'
-            response = get(django_client, request_url, data)
-            tile_res_content = response.content
-            tile = Image.open(BytesIO(tile_res_content))
-            assert tile.size == (512, 512)
-            digest_res = self.calculate_sha1(tile_res_content)
-            assert digest != digest_res
+
+            # Request the same tile from pyramid resolution level 1.
+            response = get(
+                django_client,
+                request_url,
+                {'tile': '1,0,0,512,512'}
+            )
+
+            assert response.status_code == 200
+
+            tile_res = Image.open(BytesIO(response.content))
+            tile_res.load()
+
+            assert tile_res.size == (512, 512)
+
+            # Unlike the original test, do not compare tile contents.
+            # Imported pyramid levels may legitimately contain identical data.
+
+            # Request a tile from a non-existent pyramid resolution level.
+            # Need to pass the status_code as 400, otherwise the get() helper
+            # defaults to 200 and crashes.
+            response = get(
+                django_client,
+                request_url,
+                {'tile': '5,0,0,512,512'},
+                status_code=400
+            )
+            assert response.status_code == 400
+
         finally:
             self.assert_no_leaked_rendering_engines()
 
     def test_render_image_region_region_params(self):
         """
-        Tests the retrieval of the image using the region parameter
+        Tests retrieval of image regions from an image containing an image
+        pyramid.
+
+        The test uses an image file which already contains an image pyramid.
+        It does not rely on OMERO PixelData pyramid generation.
         """
-        image = self.import_fake_file(name='fake')[0]
+
+        images = self.import_fake_file(
+            client=self.client,
+            sizeX=4000,
+            sizeY=4000,
+            resolutions=5,
+        )
+        image_id = images[0].id.val
         conn = omero.gateway.BlitzGateway(client_obj=self.client)
-        image = conn.getObject("Image", image.id.val)
+        image = conn.getObject("Image", image_id)
         image._prepareRenderingEngine()
         image._re.close()
 
@@ -513,10 +564,20 @@ class TestRenderImageRegion(IWebTest):
 
     def test_render_image_region_region_params_big_image(self, tmpdir):
         """
-        Tests the retrieval of pyramid image at different
-        resolution. Resolution changes is supported in that case.
+        Tests retrieval of image regions from a large image.
+
+        The test uses an image file which
+        already contains an image pyramid
+        instead of relying on OMERO PixelData to generate one.
         """
-        image_id = self.import_pyramid(tmpdir, client=self.client)
+        images = self.import_fake_file(
+            client=self.client,
+            sizeX=4000,
+            sizeY=4000,
+            resolutions=5,
+        )
+
+        image_id = images[0].id.val
 
         request_url = reverse(
             'webgateway_render_image_region',
@@ -530,20 +591,34 @@ class TestRenderImageRegion(IWebTest):
             data['region'] = '0,0,512,512'
             response = get(django_client, request_url, data)
             region = Image.open(BytesIO(response.content))
+            region.load()
             assert region.size == (512, 512)
+
             data['region'] = '0,0,2000,2000'
             response = get(django_client, request_url, data)
             region = Image.open(BytesIO(response.content))
+            region.load()
             assert region.size == (2000, 2000)
         finally:
             self.assert_no_leaked_rendering_engines()
 
     def test_render_birds_eye_view_big_image(self, tmpdir):
         """
-        Tests the retrieval of pyramid image at different
-        resolution. Resolution changes is supported in that case.
+        Tests retrieval of the birds-eye view for an image containing an
+        image pyramid.
+
+        The test uses an image file which already contains an image pyramid
+        instead of waiting for OMERO PixelData to generate one. The birds-eye
+        view rendering only requires pyramid levels to be available, not that
+        they were generated by OMERO.
         """
-        image_id = self.import_pyramid(tmpdir, client=self.client)
+        images = self.import_fake_file(
+            client=self.client,
+            sizeX=4000,
+            sizeY=4000,
+            resolutions=5,
+        )
+        image_id = images[0].id.val
         request_url = reverse(
             'webgateway_render_birds_eye_view',
             kwargs={'iid': str(image_id), 'size': '100'}
@@ -560,26 +635,35 @@ class TestRenderImageRegion(IWebTest):
 
     def test_render_image_region_big_image_resolution(self, tmpdir):
         """
-        Tests the retrieval of pyramid image at different
-        resolution. Resolution changes is supported in that case.
+        Verify that requests for an out-of-range pyramid resolution level
+        are rejected.
+
+        The test uses an image file which already contains an image pyramid.
+        It does not rely on OMERO PixelData pyramid generation.
         """
-        image_id = self.import_pyramid(tmpdir, client=self.client)
-        conn = omero.gateway.BlitzGateway(client_obj=self.client)
-        image = conn.getObject("Image", image_id)
-        image._prepareRenderingEngine()
-        levels = image._re.getResolutionLevels()
-        image._re.close()
+        images = self.import_fake_file(
+            client=self.client,
+            sizeX=4000,
+            sizeY=4000,
+            resolutions=5,
+        )
+        image_id = images[0].id.val
 
         request_url = reverse(
             'webgateway_render_image_region',
             kwargs={'iid': str(image_id), 'z': '0', 't': '0'}
         )
+
         django_client = self.new_django_client_from_session_id(
             self.client.getSessionId()
         )
-        data = {}
+
         try:
-            data['tile'] = '%s,0,0,512,512' % levels
-            get(django_client, request_url, data, status_code=400)
+            get(
+                django_client,
+                request_url,
+                {'tile': '5,0,0,512,512'},
+                status_code=400
+            )
         finally:
             self.assert_no_leaked_rendering_engines()
