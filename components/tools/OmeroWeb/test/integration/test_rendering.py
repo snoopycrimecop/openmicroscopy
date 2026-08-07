@@ -589,21 +589,13 @@ class TestRenderImageRegion(IWebTest):
         data = {}
         try:
             data['region'] = '0,0,512,512'
-            response = get(
-                django_client,
-                request_url,
-                {'region': '0,0,512,512'}
-            )
+            response = get(django_client, request_url, data)
             region = Image.open(BytesIO(response.content))
             region.load()
             assert region.size == (512, 512)
 
             data['region'] = '0,0,2000,2000'
-            response = get(
-                django_client,
-                request_url,
-                {'region': '0,0,2000,2000'}
-            )
+            response = get(django_client, request_url, data)
             region = Image.open(BytesIO(response.content))
             region.load()
             assert region.size == (2000, 2000)
