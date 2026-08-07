@@ -564,10 +564,20 @@ class TestRenderImageRegion(IWebTest):
 
     def test_render_image_region_region_params_big_image(self, tmpdir):
         """
-        Tests the retrieval of pyramid image at different
-        resolution. Resolution changes is supported in that case.
+        Tests retrieval of image regions from a large image.
+
+        The test uses an image file which
+        already contains an image pyramid
+        instead of relying on OMERO PixelData to generate one.
         """
-        image_id = self.import_pyramid(tmpdir, client=self.client)
+        images = self.import_fake_file(
+            client=self.client,
+            sizeX=4000,
+            sizeY=4000,
+            resolutions=5,
+        )
+
+        image_id = images[0].id.val
 
         request_url = reverse(
             'webgateway_render_image_region',
@@ -579,12 +589,23 @@ class TestRenderImageRegion(IWebTest):
         data = {}
         try:
             data['region'] = '0,0,512,512'
-            response = get(django_client, request_url, data)
+            response = get(
+                django_client,
+                request_url,
+                {'region': '0,0,512,512'}
+            )
             region = Image.open(BytesIO(response.content))
+            region.load()
             assert region.size == (512, 512)
+
             data['region'] = '0,0,2000,2000'
-            response = get(django_client, request_url, data)
+            response = get(
+                django_client,
+                request_url,
+                {'region': '0,0,2000,2000'}
+            )
             region = Image.open(BytesIO(response.content))
+            region.load()
             assert region.size == (2000, 2000)
         finally:
             self.assert_no_leaked_rendering_engines()
