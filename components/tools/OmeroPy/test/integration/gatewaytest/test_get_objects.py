@@ -545,6 +545,8 @@ class TestGetObject (ITest):
         tag.setValue("Test Tag")
         tag = obj.linkAnnotation(tag)
         dataset.linkAnnotation(tag)
+        # also link the Tag to the Comment
+        ann.linkAnnotation(tag)
 
         # get the Comment
         annotation = gatewaywrapper.gateway.getObject(
@@ -590,6 +592,15 @@ class TestGetObject (ITest):
         for al in annLinks:
             assert obj.getId() == al.parent.id.val
             assert al.parent.__class__ == omero.model.ImageI
+
+        # Check links to Tag on the Comment
+        for obj_type in ["CommentAnnotation", "Annotation"]:
+            annLinks = list(gatewaywrapper.gateway.getAnnotationLinks(
+                obj_type, parent_ids=[ann.getId()]))
+            assert len(annLinks) == 1
+            for al in annLinks:
+                assert ann.getId() == al.parent.id.val
+                assert tag.getId() == al.child.id.val
 
         # compare with getObjectsByAnnotations
         annImages = list(gatewaywrapper.gateway.getObjectsByAnnotations(
