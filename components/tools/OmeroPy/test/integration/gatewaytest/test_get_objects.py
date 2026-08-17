@@ -683,7 +683,8 @@ class TestGetObject (ITest):
             for ann_type in ann_types:
                 ann = getattr(omero.gateway, ann_type + "Wrapper")(conn)
                 ann.setNs(ns)
-                if ann_type in ("LongAnnotation", "DoubleAnnotation", "TimestampAnnotation"):
+                if ann_type in ("LongAnnotation", "DoubleAnnotation",
+                                "TimestampAnnotation"):
                     ann.setValue(100.0)
                 elif ann_type == "BooleanAnnotation":
                     ann.setValue(True)
@@ -778,10 +779,10 @@ class TestGetObject (ITest):
         # filter by namespace and type
         for ann_type in ann_types:
             annGen = conn.getObjects(ann_type,
-                                    opts={'ns': ns})
+                                     opts={'ns': ns})
             assert len(list(annGen)) == 3
             annGen = conn.getObjects(ann_type,
-                                    opts={'ns': ns_map})
+                                     opts={'ns': ns_map})
             assert len(list(annGen)) == 0
 
         # test File Annotation is loaded
