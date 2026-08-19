@@ -153,7 +153,9 @@ class TestCleanseFullAdmin(CLITest):
         assert not os.path.exists(orig_file_path)
         assert not os.path.isfile(orig_file_path_and_name)
         # The log file itself must be removed.
-        # On NFS, if another process still
+        # On NFS, the Blitz process is holding the
+        # file in ManagedRepository as well as other files
+        # in FullText folder (indexer). Until Blitz
         # has the deleted file open, the parent
         # directory may temporarily contain
         # a hidden ".nfs*" file, so its removal cannot be asserted here.
