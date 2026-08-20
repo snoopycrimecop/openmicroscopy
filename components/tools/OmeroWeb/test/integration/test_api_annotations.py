@@ -120,15 +120,11 @@ class TestAnnotations(IWebTest):
         project1 = create_dataset_with_annotations("Project 1", dtype="Project")
 
         # Also add Tag to the Group
-        groupId = conn.getEventContext().groupId
         tag = TagAnnotationWrapper(conn)
         tag.setNs("test_get_objects_group_tag")
         tag.setValue("Test Tag on Group")
-        tag.save()
-        link = ExperimenterGroupAnnotationLinkI()
-        link.child = TagAnnotationI(tag.id, False)
-        link.parent = ExperimenterGroupI(groupId, False)
-        conn.getUpdateService().saveAndReturnObject(link)
+        group = conn.getGroupFromContext()
+        group.linkAnnotation(tag)
 
         return dataset1, dataset2, project1
 
