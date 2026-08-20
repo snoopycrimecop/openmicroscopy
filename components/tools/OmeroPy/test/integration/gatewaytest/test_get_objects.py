@@ -789,6 +789,72 @@ class TestGetObject (ITest):
             assert ann.getFile().getName() == 'fileName'
             assert ann.getFile().getPath() == 'path/to/file'
 
+    def testAnnotationAnnotationLinks(self):
+        """
+        Test various annotations methods when parent is an Annotation or Group
+        """
+
+        group = self.new_group(perms='rwra--')
+        client, user = self.new_client_and_user(group=group)
+
+        conn = BlitzGateway(client_obj=client)
+
+        parent = omero.gateway.TagAnnotationWrapper(conn)
+        parent.setNs("test.annotation.parent")
+        parent.setValue("parent Tag")
+        parent.save()
+
+        child = omero.gateway.CommentAnnotationWrapper(conn)
+        child.setNs("test.annotation.child")
+        child.setValue("test annotation child Comment")
+        child.save()
+        child2 = omero.gateway.LongAnnotationWrapper(conn)
+        child2.setNs("test.annotation.child")
+        child2.setValue(123)
+        child2.save()
+
+        # link child to parent
+        parent.linkAnnotation(child)
+        parent.linkAnnotation(child2)
+        group = conn.getGroupFromContext()
+        # Also annotate the Group
+        group.linkAnnotation(child)
+
+
+        # Test getObjects() - single Comment on group
+        for ann_type in ["CommentAnnotation", "LongAnnotation", "Annotation"]:
+            annGen = conn.getObjects(ann_type,
+                                     opts={'parent_type': "experimentergroup",
+                                           'parent_ids': [group.id]})
+            count = 0 if ann_type == "LongAnnotation" else 1
+            assert len(list(annGen)) == count
+
+        # Query annotations on the Annotation
+        counts = {"CommentAnnotation": 1, "LongAnnotation": 1,
+                  "Annotation": 2, "BooleanAnnotation": 0}
+        for ann_type, count in counts.items():
+            annGen = conn.getObjects(ann_type,
+                                     opts={'parent_type': "annotation",
+                                           'parent_ids': [parent.id]})
+            assert len(list(annGen)) == count
+
+        # Test conn.getAnnotationLinks()
+        for parent_types in ["CommentAnnotation", "LongAnnotation", "Annotation"]:
+            # ALL parent_typess get coerced to "Annotation" - Long/Comment etc. ignored
+            annLinks = conn.getAnnotationLinks(parent_types, parent_ids=[parent.id])
+            assert len(list(annLinks)) == 2
+
+        for parent_types in ["ExperimenterGroup", "Annotation"]:
+            annLinks = conn.getAnnotationLinks("Annotation", ann_ids=[child.id])
+            # child is on parent (Tag) and Group, so should be 1 link each
+            assert len(list(annLinks)) == 1
+
+        # test countAnnotations()
+        counts = conn.countAnnotations("Annotation", obj_ids=[parent.id])
+        assert counts["CommentAnnotation"] == 1
+        counts = conn.countAnnotations("experimentergroup", obj_ids=[group.id])
+        assert counts["CommentAnnotation"] == 1
+
     def testGetImage(self, gatewaywrapper, author_testimg_tiny):
         testImage = author_testimg_tiny
         # This should return image wrapper
