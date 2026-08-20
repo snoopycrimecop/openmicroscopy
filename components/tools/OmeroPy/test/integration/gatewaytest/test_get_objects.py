@@ -669,14 +669,12 @@ class TestGetObject (ITest):
         def create_dataset_with_annotations(name, dtype="Dataset"):
             if dtype == "Dataset":
                 obj = DatasetI()
-                obj.name = rstring(name)
-                obj = update.saveAndReturnObject(obj)
                 wrapper = omero.gateway.DatasetWrapper(conn, obj)
             elif dtype == "Project":
                 obj = ProjectI()
-                obj.name = rstring(name)
-                obj = update.saveAndReturnObject(obj)
                 wrapper = omero.gateway.ProjectWrapper(conn, obj)
+            wrapper.setName(name)
+            wrapper.save()
 
             # Create total of 10 annotations on the object...
             # create Comment, Tag, Xml, etc
@@ -721,15 +719,11 @@ class TestGetObject (ITest):
         create_dataset_with_annotations("Project 1", dtype="Project")
 
         # Add Tag to Group
-        groupId = conn.getEventContext().groupId
         tag = omero.gateway.TagAnnotationWrapper(conn)
         tag.setNs("test_get_objects_group_tag")
         tag.setValue("Test Tag on Group")
-        tag.save()
-        link = omero.model.ExperimenterGroupAnnotationLinkI()
-        link.child = omero.model.TagAnnotationI(tag.id, False)
-        link.parent = omero.model.ExperimenterGroupI(groupId, False)
-        conn.getUpdateService().saveAndReturnObject(link)
+        group = conn.getGroupFromContext()
+        group.linkAnnotation(tag)
 
         # get all annotations on one Dataset
         annGen = conn.getObjects("Annotation",
