@@ -24,9 +24,7 @@ from django.urls import reverse
 from omeroweb.api import api_settings
 import pytest
 import omero
-from omero.model import ProjectI, DatasetI, \
-    TagAnnotationI, ExperimenterGroupAnnotationLinkI, ExperimenterGroupI, \
-    OriginalFileI
+from omero.model import ProjectI, DatasetI, OriginalFileI
 from omero.gateway import BlitzGateway, TagAnnotationWrapper, \
     FileAnnotationWrapper, OriginalFileWrapper, \
     DatasetWrapper, ProjectWrapper
@@ -84,7 +82,8 @@ class TestAnnotations(IWebTest):
             for ann_type in self.ann_types:
                 ann = getattr(omero.gateway, ann_type + "Wrapper")(conn)
                 ann.setNs(self.ns)
-                if ann_type in ("LongAnnotation", "DoubleAnnotation", "TimestampAnnotation"):
+                if ann_type in ("LongAnnotation", "DoubleAnnotation",
+                                "TimestampAnnotation"):
                     ann.setValue(100.0)
                 elif ann_type == "BooleanAnnotation":
                     ann.setValue(True)
@@ -117,7 +116,8 @@ class TestAnnotations(IWebTest):
 
         dataset1 = create_dataset_with_annotations("Dataset 1")
         dataset2 = create_dataset_with_annotations("Dataset 2")
-        project1 = create_dataset_with_annotations("Project 1", dtype="Project")
+        project1 = create_dataset_with_annotations("Project 1",
+                                                   dtype="Project")
 
         # Also add Tag to the Group
         tag = TagAnnotationWrapper(conn)
@@ -128,9 +128,8 @@ class TestAnnotations(IWebTest):
 
         return dataset1, dataset2, project1
 
-
     def test_dataset_anns(self, user1, dataset_anns):
-        """Test querying Annotations on Datasets and Projects."""
+        """Test Annotations on Datasets and Projects."""
         dataset1, dataset2, project1 = dataset_anns
         conn = BlitzGateway(client_obj=user1[0])
         user_name = conn.getUser().getName()
@@ -141,7 +140,8 @@ class TestAnnotations(IWebTest):
         # not the content of the Annotations themselves.
 
         # List ALL annotations
-        annotations_url = reverse("api_annotations", kwargs={"api_version": version})
+        annotations_url = reverse("api_annotations",
+                                  kwargs={"api_version": version})
         rsp = get_json(client, annotations_url)
         assert len(rsp["data"]) >= 31
 
@@ -151,7 +151,8 @@ class TestAnnotations(IWebTest):
 
         # annotation on group
         group_id = conn.getEventContext().groupId
-        rsp = get_json(client, annotations_url, {"experimentergroup": group_id})
+        rsp = get_json(client, annotations_url,
+                       {"experimentergroup": group_id})
         assert len(rsp["data"]) == 1
 
         # No annotations on PlateAcquisition (none created)
@@ -159,10 +160,13 @@ class TestAnnotations(IWebTest):
         assert len(rsp["data"]) == 0
 
         # We only want Tags on the Dataset
-        rsp = get_json(client, annotations_url, {"dataset": dataset1.id, "type": "tag"})
+        rsp = get_json(client, annotations_url,
+                       {"dataset": dataset1.id, "type": "tag"})
         assert len(rsp["data"]) == 1
         # alternative URL for TagAnnotations
-        tagannotations_url = reverse("api_namedannotations", kwargs={"api_version": version, "ann_type": "tag"})
+        tagannotations_url = reverse("api_namedannotations",
+                                     kwargs={"api_version": version,
+                                             "ann_type": "tag"})
         rsp = get_json(client, tagannotations_url, {"dataset": dataset1.id})
         assert len(rsp["data"]) == 1
 
@@ -173,12 +177,15 @@ class TestAnnotations(IWebTest):
         # filter by namespace and type
         for ann_type in self.ann_types:
             short_type = ann_type.replace("Annotation", "").lower()
-            rsp = get_json(client, annotations_url, {"type": short_type, "ns": self.ns})
+            rsp = get_json(client, annotations_url,
+                           {"type": short_type, "ns": self.ns})
             assert len(rsp["data"]) == 3
-            rsp = get_json(client, annotations_url, {"type": short_type, "ns": self.ns_map})
+            rsp = get_json(client, annotations_url,
+                           {"type": short_type, "ns": self.ns_map})
             assert len(rsp["data"]) == 0
 
         # test File Annotation is loaded
-        rsp = get_json(client, annotations_url, {"dataset": dataset1.id, "type": "file"})
+        rsp = get_json(client, annotations_url,
+                       {"dataset": dataset1.id, "type": "file"})
         assert len(rsp["data"]) == 1
         assert rsp["data"][0]["File"]["path"] == "path/to/file"
