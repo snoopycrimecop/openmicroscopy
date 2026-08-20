@@ -20,7 +20,7 @@ import pytest
 
 from omero.gateway.scripts import dbhelpers
 from omero.rtypes import wrap, rlong
-from omero.testlib import ITest, rstring
+from omero.testlib import ITest
 from omero.gateway import BlitzGateway, KNOWN_WRAPPERS, DatasetWrapper, \
     ProjectWrapper, ImageWrapper, ScreenWrapper, PlateWrapper
 from omero.model import DatasetI, \
@@ -656,7 +656,6 @@ class TestGetObject (ITest):
         client, user = self.new_client_and_user(group=group)
 
         conn = BlitzGateway(client_obj=client)
-        update = conn.getUpdateService()
 
         ann_types = ["CommentAnnotation", "TagAnnotation",
                      "LongAnnotation", "XmlAnnotation",
@@ -820,7 +819,6 @@ class TestGetObject (ITest):
         # Also annotate the Group
         group.linkAnnotation(child)
 
-
         # Test getObjects() - single Comment on group
         for ann_type in ["CommentAnnotation", "LongAnnotation", "Annotation"]:
             annGen = conn.getObjects(ann_type,
@@ -839,13 +837,16 @@ class TestGetObject (ITest):
             assert len(list(annGen)) == count
 
         # Test conn.getAnnotationLinks()
-        for parent_types in ["CommentAnnotation", "LongAnnotation", "Annotation"]:
-            # ALL parent_typess get coerced to "Annotation" - Long/Comment etc. ignored
-            annLinks = conn.getAnnotationLinks(parent_types, parent_ids=[parent.id])
+        for parent_types in ["CommentAnnotation", "LongAnnotation",
+                             "Annotation"]:
+            # ALL parent_typess get coerced to "Annotation"
+            annLinks = conn.getAnnotationLinks(parent_types,
+                                               parent_ids=[parent.id])
             assert len(list(annLinks)) == 2
 
         for parent_types in ["ExperimenterGroup", "Annotation"]:
-            annLinks = conn.getAnnotationLinks("Annotation", ann_ids=[child.id])
+            annLinks = conn.getAnnotationLinks("Annotation",
+                                               ann_ids=[child.id])
             # child is on parent (Tag) and Group, so should be 1 link each
             assert len(list(annLinks)) == 1
 
