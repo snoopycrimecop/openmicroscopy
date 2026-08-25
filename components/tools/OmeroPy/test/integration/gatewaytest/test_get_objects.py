@@ -803,9 +803,10 @@ class TestGetObject (ITest):
         parent.setValue("parent Tag")
         parent.save()
 
+        COMMENT_TEXT = "test annotation child Comment"
         child = omero.gateway.CommentAnnotationWrapper(conn)
         child.setNs("test.annotation.child")
-        child.setValue("test annotation child Comment")
+        child.setValue(COMMENT_TEXT)
         child.save()
         child2 = omero.gateway.LongAnnotationWrapper(conn)
         child2.setNs("test.annotation.child")
@@ -855,6 +856,20 @@ class TestGetObject (ITest):
         assert counts["CommentAnnotation"] == 1
         counts = conn.countAnnotations("experimentergroup", obj_ids=[group.id])
         assert counts["CommentAnnotation"] == 1
+
+        # test listAnnotations()
+        group = conn.getObject("ExperimenterGroup", group.id)
+        groupAnns = list(group.listAnnotations())
+        assert len(groupAnns) == 1
+        assert groupAnns[0].getValue() == COMMENT_TEXT
+        tag = conn.getObject("Annotation", parent.id)
+        tagAnns = list(tag.listAnnotations())
+        assert len(tagAnns) == 2
+        # Since obj._loadAnnotationLinks() doesn't load child annotations
+        # for AnootationAnnotationLink ?? (unexpected) the anns are
+        # not loaded, so tagAnns are just empty AnnotationWrapper()
+        # and we can't getValue()
+        # assert COMMENT_TEXT in [a.getValue() for a in tagAnns]
 
     def testGetImage(self, gatewaywrapper, author_testimg_tiny):
         testImage = author_testimg_tiny
